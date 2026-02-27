@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@import "tailwindcss";
+
+/* Design tokens as CSS variables */
+:root {
+  --background: 220 20% 98%;
+  --foreground: 220 25% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 10%;
+  --primary: 250 85% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 220 20% 22%;
+  --muted: 220 12% 94%;
+  --muted-foreground: 220 10% 42%;
+  --accent: 250 40% 96%;
+  --accent-foreground: 250 70% 50%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 14% 90%;
+  --input: 220 14% 90%;
+  --ring: 250 85% 60%;
+  --radius: 0.625rem;
+
+  --brand-violet: 250 85% 60%;
+  --brand-indigo: 230 80% 55%;
+  --brand-cyan: 185 75% 48%;
+  --brand-emerald: 160 70% 42%;
+
+  --text-tertiary: 220 8% 52%;
+  --signal-active: 160 65% 45%;
+  --signal-stale: 45 85% 55%;
+  --signal-inactive: 220 8% 58%;
+  --signal-danger: 0 72% 51%;
+
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 220 20% 25%;
+  --sidebar-primary: 250 85% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 250 40% 96%;
+  --sidebar-accent-foreground: 250 70% 50%;
+  --sidebar-border: 220 14% 92%;
+  --sidebar-ring: 250 85% 60%;
+}
+
+.dark {
+  --background: 230 25% 7%;
+  --foreground: 220 15% 88%;
+  --card: 230 22% 10%;
+  --card-foreground: 220 15% 88%;
+  --popover: 230 22% 10%;
+  --popover-foreground: 220 15% 88%;
+  --primary: 250 80% 68%;
+  --primary-foreground: 230 25% 7%;
+  --secondary: 230 18% 14%;
+  --secondary-foreground: 220 12% 82%;
+  --muted: 230 18% 12%;
+  --muted-foreground: 220 10% 50%;
+  --accent: 250 30% 18%;
+  --accent-foreground: 250 70% 75%;
+  --destructive: 0 65% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 230 18% 16%;
+  --input: 230 18% 16%;
+  --ring: 250 80% 68%;
+
+  --brand-violet: 250 80% 68%;
+  --brand-indigo: 230 75% 65%;
+  --brand-cyan: 185 70% 55%;
+  --brand-emerald: 160 65% 52%;
+
+  --text-tertiary: 220 8% 48%;
+  --signal-active: 160 55% 52%;
+  --signal-stale: 45 70% 58%;
+  --signal-inactive: 220 8% 42%;
+  --signal-danger: 0 65% 55%;
+
+  --sidebar-background: 230 22% 8%;
+  --sidebar-foreground: 220 12% 82%;
+  --sidebar-primary: 250 80% 68%;
+  --sidebar-primary-foreground: 230 25% 7%;
+  --sidebar-accent: 250 30% 18%;
+  --sidebar-accent-foreground: 250 70% 75%;
+  --sidebar-border: 230 18% 14%;
+  --sidebar-ring: 250 80% 68%;
+}
+
+/* Map CSS variables to Tailwind v4 theme tokens */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-brand-violet: hsl(var(--brand-violet));
+  --color-brand-indigo: hsl(var(--brand-indigo));
+  --color-brand-cyan: hsl(var(--brand-cyan));
+  --color-brand-emerald: hsl(var(--brand-emerald));
+
+  --color-tertiary: hsl(var(--text-tertiary));
+  --color-signal-active: hsl(var(--signal-active));
+  --color-signal-stale: hsl(var(--signal-stale));
+  --color-signal-inactive: hsl(var(--signal-inactive));
+  --color-signal-danger: hsl(var(--signal-danger));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+  --font-size-2xs: 0.6875rem;
+  --line-height-2xs: 1rem;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+}
+
+@layer utilities {
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .text-2xs {
+    font-size: 0.65rem;
+    line-height: 1rem;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.15s ease-out forwards;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSubtle 2s ease-in-out infinite;
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--brand-violet)) 0%, hsl(var(--brand-indigo)) 50%, hsl(var(--brand-cyan)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, hsl(var(--brand-violet)) 0%, hsl(var(--brand-indigo)) 100%);
+  }
+
+  .bg-brand-gradient-soft {
+    background: linear-gradient(135deg, hsl(var(--brand-violet) / 0.1) 0%, hsl(var(--brand-indigo) / 0.05) 100%);
+  }
+
+  .bg-accent-gradient {
+    background: linear-gradient(135deg, hsl(var(--brand-cyan)) 0%, hsl(var(--brand-emerald)) 100%);
+  }
+
+  .glow-brand {
+    box-shadow: 0 0 20px hsl(var(--brand-violet) / 0.25), 0 0 40px hsl(var(--brand-violet) / 0.1);
+  }
+
+  .glow-brand-sm {
+    box-shadow: 0 0 10px hsl(var(--brand-violet) / 0.2);
+  }
+
+  .signal-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+  }
+
+  .signal-dot-active {
+    background-color: hsl(var(--signal-active));
+    box-shadow: 0 0 6px hsl(var(--signal-active) / 0.5);
+  }
+
+  .signal-dot-stale {
+    background-color: hsl(var(--signal-stale));
+  }
+
+  .signal-dot-inactive {
+    background-color: hsl(var(--signal-inactive));
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background-size: 200% 100%;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--brand-violet) / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(var(--brand-violet) / 0.5); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Accordion animations */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
