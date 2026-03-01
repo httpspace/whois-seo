@@ -63,3 +63,72 @@ export async function fetchStats(): Promise<{ total: number; queries: number; ac
   const result = await safeFetchWithStatus<{ total: number; queries: number; activeToday: number }>(`${WORKER_URL}/api/stats`);
   return result.ok ? result.data : null;
 }
+
+function getJwt(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('whoisvibe-jwt');
+}
+
+export async function fetchUserFollows(): Promise<string[] | null> {
+  const token = getJwt();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/user/follows`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { domains: string[] };
+    return data.domains;
+  } catch {
+    return null;
+  }
+}
+
+export async function addUserFollow(domain: string): Promise<boolean> {
+  const token = getJwt();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/user/follows`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ domain }),
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function generateAdminAISummary(domain: string): Promise<{ summary_zh: string; summary_en: string } | null> {
+  const token = getJwt();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/admin/ai-summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ domain }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function removeUserFollow(domain: string): Promise<boolean> {
+  const token = getJwt();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/user/follows/${encodeURIComponent(domain)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
