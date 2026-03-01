@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, Flame, Plus, Check } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard } from "@/components/ui/section-card";
 import { fetchPopular } from "@/lib/api";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
@@ -15,12 +17,14 @@ type PopularItem = { domain: string; hits: number };
 
 function FollowButton({ domain }: { domain: string }) {
   const { isFollowing, followDomain, unfollowDomain } = useAppStore();
+  const { isLoggedIn } = useAuthStore();
+  const router = useRouter();
   const { t } = useLanguage();
   const following = isFollowing(domain);
 
   return (
     <button
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); following ? unfollowDomain(domain) : followDomain(domain); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isLoggedIn) { router.push('/login'); return; } following ? unfollowDomain(domain) : followDomain(domain); }}
       className={cn(
         "px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0 flex items-center gap-1",
         following ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"

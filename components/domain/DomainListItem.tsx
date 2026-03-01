@@ -1,8 +1,10 @@
 import { Link } from "@/lib/router-compat";
+import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DomainData, VibeLevel } from "@/components/domain/DomainCard";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useLanguage } from "@/i18n/useLanguage";
 
 interface DomainListItemProps {
@@ -19,12 +21,15 @@ export function DomainListItem({
   subtitle = "summary" 
 }: DomainListItemProps) {
   const { isFollowing, followDomain, unfollowDomain } = useAppStore();
+  const { isLoggedIn } = useAuthStore();
+  const router = useRouter();
   const { t } = useLanguage();
   const following = isFollowing(domain.domain);
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isLoggedIn) { router.push('/login'); return; }
     following ? unfollowDomain(domain.domain) : followDomain(domain.domain);
   };
 

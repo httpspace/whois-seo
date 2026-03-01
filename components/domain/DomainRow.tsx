@@ -1,8 +1,10 @@
 import { Link } from "@/lib/router-compat";
+import { useRouter } from "next/navigation";
 import { Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DomainData, VibeLevel } from "@/components/domain/DomainCard";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface DomainRowProps {
   domain: DomainData;
@@ -32,11 +34,14 @@ export function DomainRow({
   variant = "default" 
 }: DomainRowProps) {
   const { isFollowing, followDomain, unfollowDomain } = useAppStore();
+  const { isLoggedIn } = useAuthStore();
+  const router = useRouter();
   const following = isFollowing(domain.domain);
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isLoggedIn) { router.push('/login'); return; }
     if (following) {
       unfollowDomain(domain.domain);
     } else {
