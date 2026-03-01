@@ -21,8 +21,6 @@ import { DomainQuickStats, StatusIndicator } from "@/components/domain/DomainQui
 import { DomainAIReview } from "@/components/domain/DomainAIReview";
 import { DomainErrorState } from "@/components/domain/DomainErrorState";
 
-type VibeLevel = "ai-native" | "high-attention" | "established" | "under-radar" | "dormant" | "brand-sensitive" | "aging-influential";
-type Category = "tech" | "business" | "media" | "ecommerce" | "finance" | "social";
 
 function DataCollectingState({ domain, dnsData, aiData }: {
   domain: string;
@@ -228,25 +226,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
     });
   }, [domainProp, retryTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const vibeLabels: Record<VibeLevel, string> = {
-    "ai-native": t("vibe.ai-native"), "high-attention": t("vibe.high-attention"), "established": t("vibe.established"),
-    "under-radar": t("vibe.under-radar"), "dormant": t("vibe.dormant"), "brand-sensitive": t("vibe.brand-sensitive"),
-    "aging-influential": t("vibe.aging-influential"),
-  };
-  const categoryLabels: Record<Category, string> = {
-    tech: t("category.tech"), business: t("category.business"), media: t("category.media"),
-    ecommerce: t("category.ecommerce"), finance: t("category.finance"), social: t("category.social"),
-  };
-
-  const domain = {
-    domain: domainProp,
-    category: "tech" as Category,
-    vibe: "under-radar" as VibeLevel,
-    summary: "",
-    popularity: "low" as const,
-    age: "",
-    lastActive: "",
-  };
+  const domain = { domain: domainProp };
 
   const following = isFollowing(domain.domain);
 
@@ -257,6 +237,16 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
 
   const isFetching = fetchState.status === 'fetching';
   const isSuccess = fetchState.status === 'success';
+
+  // Real-time SSL check: fetch with no-cors; TLS failure throws TypeError
+  const [sslStatus, setSslStatus] = useState<'checking' | 'ok' | 'fail' | null>(null);
+  useEffect(() => {
+    if (!isSuccess) { setSslStatus(null); return; }
+    setSslStatus('checking');
+    fetch(`https://${domainProp}`, { mode: 'no-cors', signal: AbortSignal.timeout(8000) })
+      .then(() => setSslStatus('ok'))
+      .catch(() => setSslStatus('fail'));
+  }, [isSuccess, domainProp]);
 
   // Data for rendering — only valid in success state
   const dnsData = isSuccess ? fetchState.dnsData : null;
@@ -331,16 +321,11 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                     {isFetching ? (
                       <p className="text-sm text-muted-foreground mt-2">{t("domain.collecting")}</p>
                     ) : isSuccess ? (
-                      <>
-                        <div className="flex items-center gap-3 mt-2">
-                          <StatusIndicator status="good" label={t("domain.sslOk")} size="sm" />
-                          <StatusIndicator status="good" label={t("domain.running")} size="sm" />
-                        </div>
-                        <div className="mt-3 flex items-center gap-2 flex-wrap">
-                          <span className="inline-block text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md">{vibeLabels[domain.vibe]}</span>
-                          <span className="inline-block text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-md">{categoryLabels[domain.category]}</span>
-                        </div>
-                      </>
+                      <div className="flex items-center gap-3 mt-2">
+                        {sslStatus === 'checking' && <StatusIndicator status="checking" label="SSL 檢測中" size="sm" />}
+                        {sslStatus === 'ok'       && <StatusIndicator status="good"     label={t("domain.sslOk")} size="sm" />}
+                        {sslStatus === 'fail'     && <StatusIndicator status="danger"   label="SSL 異常" size="sm" />}
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -375,7 +360,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
               {mainContent ?? (
                 <>
                   <DomainQuickStats domain={domain.domain} data={dnsData} />
-                  <DomainAIReview domain={domain.domain} data={aiData} description={domain.summary} />
+                  <DomainAIReview domain={domain.domain} data={aiData} description={undefined} />
                   <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
                 </>
               )}
@@ -407,15 +392,11 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                   {isFetching ? (
                     <p className="text-sm text-muted-foreground mt-1">{t("domain.collecting")}</p>
                   ) : isSuccess ? (
-                    <>
-                      <div className="flex items-center gap-2 mt-1">
-                        <StatusIndicator status="good" label={t("domain.normal")} size="sm" />
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <span className="inline-block text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md">{vibeLabels[domain.vibe]}</span>
-                        <span className="inline-block text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{categoryLabels[domain.category]}</span>
-                      </div>
-                    </>
+                    <div className="flex items-center gap-2 mt-1">
+                      {sslStatus === 'checking' && <StatusIndicator status="checking" label="SSL 檢測中" size="sm" />}
+                      {sslStatus === 'ok'       && <StatusIndicator status="good"     label={t("domain.sslOk")} size="sm" />}
+                      {sslStatus === 'fail'     && <StatusIndicator status="danger"   label="SSL 異常" size="sm" />}
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -448,7 +429,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
 
             {mainContent ?? (
               <>
-                <DomainAIReview domain={domain.domain} data={aiData} description={domain.summary} />
+                <DomainAIReview domain={domain.domain} data={aiData} description={undefined} />
                 <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
 
               </>
