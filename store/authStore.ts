@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useAppStore } from '@/store/appStore';
 
 interface User {
   email: string;
@@ -38,21 +39,12 @@ interface AuthState {
   unreadCount: () => number;
 }
 
-const mockNotifications: Notification[] = [
-  { id: '1', type: 'expiring', domain: 'example.com', message: '將在 3 天後到期', date: '2025-03-01', read: false },
-  { id: '2', type: 'expiring', domain: 'mysite.org', message: '將在 7 天後到期', date: '2025-02-28', read: false },
-  { id: '3', type: 'expired', domain: 'oldproject.net', message: '已到期', date: '2025-02-25', read: false },
-  { id: '4', type: 'renewed', domain: 'company.io', message: '已成功續約至 2026-02-20', date: '2025-02-20', read: true },
-  { id: '5', type: 'change', domain: 'startup.dev', message: 'WHOIS 資訊已變更', date: '2025-02-18', read: true },
-  { id: '6', type: 'expiring', domain: 'portfolio.me', message: '將在 14 天後到期', date: '2025-02-15', read: true },
-];
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
       isLoggedIn: false,
-      notifications: mockNotifications,
+      notifications: [],
 
       login: (user, token?: string) => {
         if (token && typeof window !== 'undefined') {
@@ -62,12 +54,15 @@ export const useAuthStore = create<AuthState>()(
           user = { ...user, isAdmin: payload.is_admin === 1 };
         }
         set({ user, isLoggedIn: true });
+        // Load server-side follows after login (async, non-blocking)
+        useAppStore.getState().syncFollowsFromServer();
       },
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('whoisvibe-jwt');
         }
         set({ user: null, isLoggedIn: false });
+        useAppStore.getState().clearFollows();
       },
 
       // Called after rehydration to evict expired sessions (JWT exp check)
