@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
-import { ArrowLeft, Clock, RefreshCw } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, Plus, Check } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard } from "@/components/ui/section-card";
 import { fetchRecent } from "@/lib/api";
+import { useAppStore } from "@/store/appStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,64 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function FollowButton({ domain }: { domain: string }) {
+  const { isFollowing, followDomain, unfollowDomain } = useAppStore();
+  const { t } = useLanguage();
+  const following = isFollowing(domain);
+
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); following ? unfollowDomain(domain) : followDomain(domain); }}
+      className={cn(
+        "px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0 flex items-center gap-1",
+        following ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"
+      )}
+    >
+      {following ? <><Check className="w-3.5 h-3.5" />{t("domain.following")}</> : <><Plus className="w-3.5 h-3.5" />{t("domain.follow")}</>}
+    </button>
+  );
+}
+
+function DomainRow({ domain, updated }: RecentItem) {
+  return (
+    <Link href={`/domain/${domain}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
+      <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+        <Clock className="w-4 h-4 text-blue-500" />
+      </div>
+      <span className="font-medium font-mono text-sm truncate flex-1 min-w-0">{domain}</span>
+      <span className="text-xs text-muted-foreground shrink-0 mr-2">{timeAgo(updated)}</span>
+      <FollowButton domain={domain} />
+    </Link>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className="divide-y divide-border">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+          <div className="w-9 h-9 rounded-full bg-muted shrink-0" />
+          <div className="flex-1 h-3.5 bg-muted rounded" />
+          <div className="w-10 h-3 bg-muted rounded mr-2" />
+          <div className="w-16 h-7 bg-muted rounded-full shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState() {
+  const { t } = useLanguage();
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+      <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-4">
+        <Clock className="w-6 h-6 text-muted-foreground" />
+      </div>
+      <p className="text-sm text-muted-foreground">{t("recent.empty")}</p>
+    </div>
+  );
+}
+
 export default function RecentDomains() {
   const [items, setItems] = useState<RecentItem[] | null>(null);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -28,40 +87,6 @@ export default function RecentDomains() {
   useEffect(() => {
     fetchRecent(50).then(setItems);
   }, []);
-
-  const DomainRow = ({ domain, updated }: RecentItem) => (
-    <Link
-      href={`/domain/${domain}`}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
-    >
-      <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-        <Clock className="w-4 h-4 text-blue-500" />
-      </div>
-      <span className="font-medium font-mono text-sm truncate flex-1 min-w-0">{domain}</span>
-      <span className="text-xs text-muted-foreground shrink-0">{timeAgo(updated)}</span>
-    </Link>
-  );
-
-  const Skeleton = () => (
-    <div className="divide-y divide-border">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
-          <div className="w-9 h-9 rounded-full bg-muted shrink-0" />
-          <div className="flex-1 h-3.5 bg-muted rounded" />
-          <div className="w-10 h-3 bg-muted rounded" />
-        </div>
-      ))}
-    </div>
-  );
-
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-      <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-4">
-        <Clock className="w-6 h-6 text-muted-foreground" />
-      </div>
-      <p className="text-sm text-muted-foreground">{t("recent.empty")}</p>
-    </div>
-  );
 
   const content = items === null ? <Skeleton /> : items.length === 0 ? <EmptyState /> : (
     <div className="divide-y divide-border">
@@ -87,15 +112,13 @@ export default function RecentDomains() {
         {isDesktop ? (
           <div className="grid grid-cols-3 gap-6 px-6 py-8">
             <div className="col-span-2">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-semibold text-foreground">{t("recent.title")}</h1>
-                    <p className="text-sm text-muted-foreground">{t("recent.subtitle")}</p>
-                  </div>
+              <div className="mb-6 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-foreground">{t("recent.title")}</h1>
+                  <p className="text-sm text-muted-foreground">{t("recent.subtitle")}</p>
                 </div>
               </div>
               <SectionCard className="overflow-hidden p-0">
@@ -107,7 +130,7 @@ export default function RecentDomains() {
                 <div className="flex items-start gap-3">
                   <RefreshCw className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold mb-1">{t("recent.realtime")}</h4>
+                    <h2 className="text-sm font-semibold mb-1">{t("recent.realtime")}</h2>
                     <p className="text-xs text-muted-foreground leading-relaxed">{t("recent.realtimeDesc")}</p>
                   </div>
                 </div>
