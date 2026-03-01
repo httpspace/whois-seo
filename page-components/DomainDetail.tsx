@@ -143,6 +143,9 @@ function buildInitialFetchState(initialData?: InitialDomainData): FetchState {
   return { status: 'success', whoisData: whois ?? {}, dnsData: merged, aiData: ai ?? null };
 }
 
+// Module-level SSL result cache — persists for session lifetime only
+const sslCache = new Map<string, 'ok' | 'fail'>();
+
 export default function DomainDetail({ domain: domainProp, initialData }: { domain: string; initialData?: InitialDomainData }) {
   const [fetchState, setFetchState] = useState<FetchState>(() => buildInitialFetchState(initialData));
   const [retryTrigger, setRetryTrigger] = useState(0);
@@ -242,11 +245,13 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
   const [sslStatus, setSslStatus] = useState<'checking' | 'ok' | 'fail' | null>(null);
   useEffect(() => {
     if (!isSuccess) { setSslStatus(null); return; }
-    setSslStatus('checking');
-    fetch(`https://${domainProp}`, { mode: 'no-cors', signal: AbortSignal.timeout(8000) })
-      .then(() => setSslStatus('ok'))
-      .catch(() => setSslStatus('fail'));
-  }, [isSuccess, domainProp]);
+    const cached = sslCache.get(domainProp);
+  if (cached) { setSslStatus(cached); return; }
+  setSslStatus('checking');
+  fetch(`https://${domainProp}`, { mode: 'no-cors', signal: AbortSignal.timeout(8000) })
+    .then(() => { sslCache.set(domainProp, 'ok'); setSslStatus('ok'); })
+    .catch(() => { sslCache.set(domainProp, 'fail'); setSslStatus('fail'); });
+}, [isSuccess, domainProp]);
 
   // Data for rendering — only valid in success state
   const dnsData = isSuccess ? fetchState.dnsData : null;
