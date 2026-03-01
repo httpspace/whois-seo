@@ -1,27 +1,24 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Link } from "@/lib/router-compat";
 import { fetchDNS, fetchWhois, fetchAISummary } from "@/lib/api";
-import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock } from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock, RefreshCw } from "lucide-react";
 import { ExternalLinkWarning } from "@/components/domain/ExternalLinkWarning";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard } from "@/components/ui/section-card";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
 import type { WhoisData, DNSData, AISummaryData, FetchState } from "@/types/domain";
 
 // Components
-import { DomainSecurityCard } from "@/components/domain/DomainSecurityCard";
-import { DomainHealthCard } from "@/components/domain/DomainHealthCard";
 import { DomainDNSCard } from "@/components/domain/DomainDNSCard";
-import { DomainTimeline } from "@/components/domain/DomainTimeline";
 import { DomainQuickStats, StatusIndicator } from "@/components/domain/DomainQuickStats";
 import { DomainAIReview } from "@/components/domain/DomainAIReview";
-import { DomainComparison } from "@/components/domain/DomainComparison";
 import { DomainErrorState } from "@/components/domain/DomainErrorState";
 
 type VibeLevel = "ai-native" | "high-attention" | "established" | "under-radar" | "dormant" | "brand-sensitive" | "aging-influential";
@@ -156,11 +153,27 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
   const [inProgressAi, setInProgressAi] = useState<AISummaryData | null | undefined>(undefined);
 
   const { isFollowing, followDomain, unfollowDomain, addRecentSearch } = useAppStore();
+  const { isLoggedIn } = useAuthStore();
+  const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
 
+  // Skip client-side fetch if SSR already provided valid data (D1 cache hit).
+  // Only skip once on initial mount; subsequent domain changes or retries always fetch.
+  const skipFetchRef = useRef(
+    !!(initialData && (initialData.whois || initialData.dns))
+  );
+
   useEffect(() => {
-    // Immediately reset — prevents ghost data from previous domain (Scenario E)
+    // If SSR gave us valid data on initial load, use it directly — no loading state needed.
+    if (skipFetchRef.current && retryTrigger === 0) {
+      skipFetchRef.current = false;
+      addRecentSearch(domainProp);
+      return;
+    }
+    skipFetchRef.current = false;
+
+    // Reset — prevents ghost data from previous domain (Scenario E)
     setFetchState({ status: 'fetching' });
     setInProgressDns(undefined);
     setInProgressAi(undefined);
@@ -236,9 +249,9 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
   };
 
   const following = isFollowing(domain.domain);
-  const relatedDomains: { domain: string; vibe: VibeLevel }[] = [];
 
   const handleFollow = () => {
+    if (!isLoggedIn) { router.push('/login'); return; }
     following ? unfollowDomain(domain.domain) : followDomain(domain.domain);
   };
 
@@ -332,6 +345,13 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                   </div>
                 </div>
 
+                {isSuccess && dnsData?.update_date && (
+                  <p className="text-[11px] text-muted-foreground/50 mt-4 flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3" />
+                    {t("domain.lastUpdated")}: {dnsData.update_date}
+                  </p>
+                )}
+
                 <div className="flex items-center gap-3 mt-6">
                   <button
                     onClick={handleFollow}
@@ -361,36 +381,9 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
               )}
             </div>
 
-            {/* Right Column */}
+            {/* Right Column — reserved for future features */}
             <div className="space-y-6">
-              {isSuccess && (
-                <SectionCard>
-                  <Tabs defaultValue="health" className="w-full">
-                    <TabsList className="w-full grid grid-cols-3 mb-4">
-                      <TabsTrigger value="health" className="text-xs">{t("domain.tabHealth")}</TabsTrigger>
-                      <TabsTrigger value="security" className="text-xs">{t("domain.tabSecurity")}</TabsTrigger>
-                      <TabsTrigger value="timeline" className="text-xs">{t("domain.tabTimeline")}</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="health">
-                      <DomainHealthCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                    <TabsContent value="security">
-                      <DomainSecurityCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                    <TabsContent value="timeline">
-                      <DomainTimeline domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                  </Tabs>
-                </SectionCard>
-              )}
-
-              {isSuccess && relatedDomains.length > 0 && (
-                <DomainComparison
-                  currentDomain={domain.domain}
-                  relatedDomains={relatedDomains.map(d => ({ domain: d.domain, vibe: d.vibe }))}
-                  vibeLabels={vibeLabels}
-                />
-              )}
+              {/* DomainComparison hidden — not yet released */}
             </div>
           </div>
         ) : (
@@ -427,6 +420,13 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                 </div>
               </div>
 
+              {isSuccess && dnsData?.update_date && (
+                <p className="text-[11px] text-muted-foreground/50 mt-3 flex items-center gap-1">
+                  <RefreshCw className="w-3 h-3" />
+                  {t("domain.lastUpdated")}: {dnsData.update_date}
+                </p>
+              )}
+
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={handleFollow}
@@ -450,32 +450,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
               <>
                 <DomainAIReview domain={domain.domain} data={aiData} description={domain.summary} />
                 <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
-                <SectionCard>
-                  <Tabs defaultValue="health" className="w-full">
-                    <TabsList className="w-full grid grid-cols-3 mb-4">
-                      <TabsTrigger value="health" className="text-xs">{t("domain.tabHealth")}</TabsTrigger>
-                      <TabsTrigger value="security" className="text-xs">{t("domain.tabSecurity")}</TabsTrigger>
-                      <TabsTrigger value="timeline" className="text-xs">{t("domain.tabTimeline")}</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="health">
-                      <DomainHealthCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                    <TabsContent value="security">
-                      <DomainSecurityCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                    <TabsContent value="timeline">
-                      <DomainTimeline domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
-                  </Tabs>
-                </SectionCard>
 
-                {relatedDomains.length > 0 && (
-                  <DomainComparison
-                    currentDomain={domain.domain}
-                    relatedDomains={relatedDomains.map(d => ({ domain: d.domain, vibe: d.vibe }))}
-                    vibeLabels={vibeLabels}
-                  />
-                )}
               </>
             )}
           </div>
