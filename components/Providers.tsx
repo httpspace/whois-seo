@@ -9,14 +9,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 
-// Rehydrates Zustand stores from localStorage and evicts expired JWTs.
-// Must be a child component so it runs after client hydration.
+// Rehydrates Zustand stores from localStorage, evicts expired JWTs,
+// and loads followedDomains from D1 if the user is logged in.
 function StoreRehydrator() {
   useEffect(() => {
     useAppStore.persist.rehydrate();
     useAuthStore.persist.rehydrate();
-    // After rehydrating, evict any expired session
     useAuthStore.getState().checkAndClearExpired();
+    // followedDomains is D1-authoritative: load from server on every mount
+    if (useAuthStore.getState().isLoggedIn) {
+      useAppStore.getState().syncFollowsFromServer();
+    }
   }, []);
   return null;
 }
