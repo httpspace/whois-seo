@@ -1,20 +1,48 @@
 'use client'
 
+import { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
 import { ArrowLeft, TrendingUp, Flame } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard } from "@/components/ui/section-card";
-import { DomainListItem } from "@/components/domain/DomainListItem";
-import { trendingDomains, allDomains } from "@/data/mockDomains";
+import { fetchPopular } from "@/lib/api";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
 
+type PopularItem = { domain: string; hits: number };
+
 export default function TrendingDomains() {
-  const domains = [...trendingDomains, ...allDomains.filter(d => d.popularity === "high").slice(0, 10)];
-  const uniqueDomains = domains.filter((d, i, arr) => arr.findIndex(x => x.domain === d.domain) === i);
+  const [domains, setDomains] = useState<PopularItem[] | null>(null);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
+
+  useEffect(() => {
+    fetchPopular().then(setDomains);
+  }, []);
+
+  const SkeletonRow = () => (
+    <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
+      <div className="w-9 h-9 rounded-full bg-muted shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <div className="h-3.5 bg-muted rounded w-32" />
+        <div className="h-3 bg-muted rounded w-20" />
+      </div>
+    </div>
+  );
+
+  const DomainRow = ({ item, rank }: { item: PopularItem; rank: number }) => (
+    <Link
+      href={`/domain/${item.domain}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+    >
+      <span className="w-7 text-center text-sm font-bold text-muted-foreground">#{rank}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium font-mono text-sm truncate">{item.domain}</p>
+        <p className="text-xs text-muted-foreground">{item.hits.toLocaleString()} 次查詢</p>
+      </div>
+    </Link>
+  );
 
   return (
     <ResponsiveLayout>
@@ -49,9 +77,10 @@ export default function TrendingDomains() {
                 </div>
               </div>
               <SectionCard className="divide-y divide-border">
-                {uniqueDomains.map((domain) => (
-                  <DomainListItem key={domain.domain} domain={domain} showFollowButton />
-                ))}
+                {domains === null
+                  ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
+                  : domains.map((item, i) => <DomainRow key={item.domain} item={item} rank={i + 1} />)
+                }
               </SectionCard>
             </div>
             <div className="space-y-6">
@@ -61,10 +90,10 @@ export default function TrendingDomains() {
                   <h3 className="font-semibold">{t("trending.hotThisWeek")}</h3>
                 </div>
                 <div className="space-y-2">
-                  {uniqueDomains.slice(0, 3).map((d, i) => (
-                    <Link key={d.domain} href={`/domain/${d.domain}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-background/50 transition-colors">
+                  {(domains ?? []).slice(0, 3).map((item, i) => (
+                    <Link key={item.domain} href={`/domain/${item.domain}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-background/50 transition-colors">
                       <span className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold">{i + 1}</span>
-                      <span className="text-sm font-medium font-mono">{d.domain}</span>
+                      <span className="text-sm font-medium font-mono">{item.domain}</span>
                     </Link>
                   ))}
                 </div>
@@ -73,9 +102,10 @@ export default function TrendingDomains() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {uniqueDomains.map((domain) => (
-              <DomainListItem key={domain.domain} domain={domain} showFollowButton />
-            ))}
+            {domains === null
+              ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
+              : domains.map((item, i) => <DomainRow key={item.domain} item={item} rank={i + 1} />)
+            }
           </div>
         )}
       </div>

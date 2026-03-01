@@ -1,9 +1,9 @@
 'use client'
 
 import { Link } from "@/lib/router-compat";
-import { ArrowLeft, ChevronRight, Grid3X3 } from "lucide-react";
+import { ArrowLeft, Grid3X3, Construction } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
-import { categories } from "@/data/mockDomains";
+import { SectionCard } from "@/components/ui/section-card";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 
@@ -38,16 +38,14 @@ export default function Categories() {
           </div>
         )}
 
-        <div className="divide-y divide-border">
-          {categories.map((category) => (
-            <Link key={category.id} href={`/categories/${category.id}`} className="flex items-center justify-between px-4 lg:px-6 py-4 hover:bg-muted/50 active:bg-muted transition-colors">
-              <div>
-                <p className="font-medium text-foreground">{category.label}</p>
-                <p className="text-sm text-muted-foreground">{category.count} {t("categories.domains")}</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </Link>
-          ))}
+        <div className="px-4 py-8 lg:px-6">
+          <SectionCard className="text-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Construction className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h2 className="font-semibold text-foreground mb-2">尚待完成</h2>
+            <p className="text-sm text-muted-foreground">此功能正在開發中，敬請期待。</p>
+          </SectionCard>
         </div>
       </div>
     </ResponsiveLayout>

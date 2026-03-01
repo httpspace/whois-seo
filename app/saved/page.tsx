@@ -1,2 +1,2 @@
 'use client'
-export { default } from "@/pages/SavedDomains";
+export { default } from "@/page-components/SavedDomains";

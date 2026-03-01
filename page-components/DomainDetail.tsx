@@ -1,18 +1,18 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { useParams, Link } from "@/lib/router-compat";
-import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock, RefreshCw } from "lucide-react";
+import { Link } from "@/lib/router-compat";
+import { fetchDNS, fetchWhois, fetchAISummary } from "@/lib/api";
+import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock } from "lucide-react";
 import { ExternalLinkWarning } from "@/components/domain/ExternalLinkWarning";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
-import { SectionCard, SectionHeader } from "@/components/ui/section-card";
-import { ListItem } from "@/components/ui/list-item";
-import { getDomainByName, allDomains } from "@/data/mockDomains";
+import { SectionCard } from "@/components/ui/section-card";
 import { useAppStore } from "@/store/appStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
+import type { WhoisData, DNSData, AISummaryData, FetchState } from "@/types/domain";
 
 // Components
 import { DomainSecurityCard } from "@/components/domain/DomainSecurityCard";
@@ -22,27 +22,39 @@ import { DomainTimeline } from "@/components/domain/DomainTimeline";
 import { DomainQuickStats, StatusIndicator } from "@/components/domain/DomainQuickStats";
 import { DomainAIReview } from "@/components/domain/DomainAIReview";
 import { DomainComparison } from "@/components/domain/DomainComparison";
+import { DomainErrorState } from "@/components/domain/DomainErrorState";
 
 type VibeLevel = "ai-native" | "high-attention" | "established" | "under-radar" | "dormant" | "brand-sensitive" | "aging-influential";
 type Category = "tech" | "business" | "media" | "ecommerce" | "finance" | "social";
 
-function DataCollectingState({ domain }: { domain: string }) {
-  const [currentStep, setCurrentStep] = useState(0);
+function DataCollectingState({ domain, dnsData, aiData }: {
+  domain: string;
+  dnsData: DNSData | null | undefined;
+  aiData: AISummaryData | null | undefined;
+}) {
+  const [timerStep, setTimerStep] = useState(0);
   const { t } = useLanguage();
-  
-  const collectingSteps = [
-    { icon: Database, label: t("domain.stepWhois"), status: "loading" as const },
-    { icon: Server, label: t("domain.stepDNS"), status: "pending" as const },
-    { icon: Shield, label: t("domain.stepSecurity"), status: "pending" as const },
-    { icon: Clock, label: t("domain.stepHistory"), status: "pending" as const },
-  ];
-  
+
+  const step0Done = dnsData !== undefined;
+  const step1Done = aiData !== undefined;
+  const step2Done = timerStep >= 2;
+  const step3Done = timerStep >= 3;
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentStep(prev => (prev < collectingSteps.length - 1 ? prev + 1 : prev));
+      setTimerStep(prev => (prev < 3 ? prev + 1 : prev));
     }, 1500);
     return () => clearInterval(timer);
   }, []);
+
+  const collectingSteps = [
+    { icon: Database, label: t("domain.stepWhois"), done: step0Done },
+    { icon: Server, label: t("domain.stepDNS"), done: step1Done },
+    { icon: Shield, label: t("domain.stepSecurity"), done: step2Done },
+    { icon: Clock, label: t("domain.stepHistory"), done: step3Done },
+  ];
+
+  const currentStep = collectingSteps.findIndex(s => !s.done);
 
   return (
     <SectionCard className="text-center py-12">
@@ -50,16 +62,17 @@ function DataCollectingState({ domain }: { domain: string }) {
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
       <h2 className="text-lg font-semibold mb-2">{t("domain.firstQuery")}</h2>
-      <p className="text-sm text-muted-foreground mb-8 max-w-sm mx-auto">
+      <p className="text-sm text-muted-foreground mb-2 max-w-sm mx-auto">
         {t("domain.collectingInfo").replace("...", "")} <span className="font-mono text-foreground">{domain}</span>...
       </p>
-      
+      <p className="text-xs text-muted-foreground mb-8">{t("domain.takesSeconds")}</p>
+
       <div className="max-w-xs mx-auto space-y-3">
         {collectingSteps.map((step, i) => {
-          const isActive = i === currentStep;
-          const isDone = i < currentStep;
-          const isPending = i > currentStep;
-          
+          const isDone = step.done;
+          const isActive = !isDone && i === currentStep;
+          const isPending = !isDone && !isActive;
+
           return (
             <div
               key={step.label}
@@ -110,12 +123,97 @@ function DataCollectingState({ domain }: { domain: string }) {
   );
 }
 
-export default function DomainDetail() {
-  const params = useParams();
-  const domainName = params?.domain as string | undefined;
+type InitialDomainData = {
+  whois: WhoisData | null
+  dns: DNSData | null
+  ai: AISummaryData | null
+}
+
+function buildInitialFetchState(initialData?: InitialDomainData): FetchState {
+  if (!initialData) return { status: 'fetching' };
+  const { whois, dns, ai } = initialData;
+  if (!whois && !dns) return { status: 'fetching' };
+  const merged: DNSData = {
+    ...(dns ?? {}),
+    registrar: whois?.domain_registrar?.registrar_name,
+    registrar_url: whois?.domain_registrar?.website_url,
+    registrant_org: whois?.registrant_contact?.company,
+    registrant_country: whois?.registrant_contact?.country_name,
+    create_date: whois?.create_date,
+    expiry_date: whois?.expiry_date,
+    update_date: whois?.update_date,
+    domain_status: whois?.domain_status,
+    name_servers: whois?.name_servers,
+  };
+  return { status: 'success', whoisData: whois ?? {}, dnsData: merged, aiData: ai ?? null };
+}
+
+export default function DomainDetail({ domain: domainProp, initialData }: { domain: string; initialData?: InitialDomainData }) {
+  const [fetchState, setFetchState] = useState<FetchState>(() => buildInitialFetchState(initialData));
+  const [retryTrigger, setRetryTrigger] = useState(0);
+  // Intermediate DNS/AI for DataCollectingState progress (undefined = not returned yet)
+  const [inProgressDns, setInProgressDns] = useState<DNSData | null | undefined>(undefined);
+  const [inProgressAi, setInProgressAi] = useState<AISummaryData | null | undefined>(undefined);
+
   const { isFollowing, followDomain, unfollowDomain, addRecentSearch } = useAppStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
+
+  useEffect(() => {
+    // Immediately reset — prevents ghost data from previous domain (Scenario E)
+    setFetchState({ status: 'fetching' });
+    setInProgressDns(undefined);
+    setInProgressAi(undefined);
+
+    const dnsPromise = fetchDNS(domainProp).then(r => { setInProgressDns(r.ok ? r.data : null); return r; });
+    const whoisPromise = fetchWhois(domainProp);
+    const aiPromise = fetchAISummary(domainProp).then(r => { setInProgressAi(r.ok ? r.data : null); return r; });
+
+    Promise.all([dnsPromise, whoisPromise, aiPromise]).then(([dnsResult, whoisResult, aiResult]) => {
+      // Both WHOIS and DNS failed
+      if (!dnsResult.ok && !whoisResult.ok) {
+        if (whoisResult.reason === 'invalid') {
+          setFetchState({ status: 'invalid', domain: domainProp });
+        } else {
+          setFetchState({ status: 'fetch-failed', domain: domainProp, retryCount: retryTrigger });
+        }
+        return;
+      }
+
+      const whoisData = whoisResult.ok ? whoisResult.data : null;
+      const dnsData = dnsResult.ok ? dnsResult.data : null;
+
+      // Check if domain appears unregistered
+      const hasWhoisSignal = !!(whoisData?.create_date || whoisData?.domain_registrar?.registrar_name);
+      const hasDnsSignal = !!(dnsData?.dnsRecords?.length || dnsData?.nameservers?.length || dnsData?.dns_records?.length);
+      if (!hasWhoisSignal && !hasDnsSignal) {
+        setFetchState({ status: 'not-registered', domain: domainProp });
+        return;
+      }
+
+      // Merge whois fields into dnsData shape
+      const merged: DNSData = {
+        ...(dnsData ?? {}),
+        registrar: whoisData?.domain_registrar?.registrar_name,
+        registrar_url: whoisData?.domain_registrar?.website_url,
+        registrant_org: whoisData?.registrant_contact?.company,
+        registrant_country: whoisData?.registrant_contact?.country_name,
+        create_date: whoisData?.create_date,
+        expiry_date: whoisData?.expiry_date,
+        update_date: whoisData?.update_date,
+        domain_status: whoisData?.domain_status,
+        name_servers: whoisData?.name_servers,
+      };
+
+      setFetchState({
+        status: 'success',
+        whoisData: whoisData ?? {},
+        dnsData: merged,
+        aiData: aiResult.ok ? aiResult.data : null,
+      });
+      addRecentSearch(domainProp);
+    });
+  }, [domainProp, retryTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vibeLabels: Record<VibeLevel, string> = {
     "ai-native": t("vibe.ai-native"), "high-attention": t("vibe.high-attention"), "established": t("vibe.established"),
@@ -127,11 +225,8 @@ export default function DomainDetail() {
     ecommerce: t("category.ecommerce"), finance: t("category.finance"), social: t("category.social"),
   };
 
-  // Get domain from mock data - if not found, it's a new domain being collected
-  const foundDomain = domainName ? getDomainByName(domainName) : null;
-  const isNewDomain = !foundDomain;
-  const domain = foundDomain || { 
-    domain: domainName || "example.com",
+  const domain = {
+    domain: domainProp,
     category: "tech" as Category,
     vibe: "under-radar" as VibeLevel,
     summary: "",
@@ -140,17 +235,40 @@ export default function DomainDetail() {
     lastActive: "",
   };
 
-  // Add to recent searches
-  useEffect(() => {
-    if (domainName) addRecentSearch(domainName);
-  }, [domainName, addRecentSearch]);
-
   const following = isFollowing(domain.domain);
-  const relatedDomains = allDomains.filter(d => d.category === domain.category && d.domain !== domain.domain).slice(0, 4);
+  const relatedDomains: { domain: string; vibe: VibeLevel }[] = [];
 
   const handleFollow = () => {
     following ? unfollowDomain(domain.domain) : followDomain(domain.domain);
   };
+
+  const isFetching = fetchState.status === 'fetching';
+  const isSuccess = fetchState.status === 'success';
+
+  // Data for rendering — only valid in success state
+  const dnsData = isSuccess ? fetchState.dnsData : null;
+  const aiData = isSuccess ? fetchState.aiData : null;
+
+  const heroIcon = isFetching ? (
+    <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+  ) : (
+    <Globe className="w-8 h-8 text-primary-foreground" />
+  );
+
+  const mainContent = (() => {
+    switch (fetchState.status) {
+      case 'fetching':
+        return <DataCollectingState domain={domain.domain} dnsData={inProgressDns} aiData={inProgressAi} />;
+      case 'success':
+        return null; // rendered inline below
+      case 'not-registered':
+        return <DomainErrorState variant="not-registered" domain={fetchState.domain} />;
+      case 'fetch-failed':
+        return <DomainErrorState variant="fetch-failed" domain={fetchState.domain} onRetry={() => setRetryTrigger(n => n + 1)} />;
+      case 'invalid':
+        return <DomainErrorState variant="invalid" domain={fetchState.domain} />;
+    }
+  })();
 
   return (
     <ResponsiveLayout>
@@ -191,19 +309,15 @@ export default function DomainDetail() {
                 <div className="flex items-start gap-5">
                   <div className={cn(
                     "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0",
-                    isNewDomain ? "bg-muted" : "bg-brand-gradient animate-glow"
+                    isFetching ? "bg-muted" : "bg-brand-gradient animate-glow"
                   )}>
-                    {isNewDomain ? (
-                      <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
-                    ) : (
-                      <Globe className="w-8 h-8 text-primary-foreground" />
-                    )}
+                    {heroIcon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h1 className="font-mono text-2xl font-semibold tracking-tight truncate">{domain.domain}</h1>
-                    {isNewDomain ? (
+                    {isFetching ? (
                       <p className="text-sm text-muted-foreground mt-2">{t("domain.collecting")}</p>
-                    ) : (
+                    ) : isSuccess ? (
                       <>
                         <div className="flex items-center gap-3 mt-2">
                           <StatusIndicator status="good" label={t("domain.sslOk")} size="sm" />
@@ -214,7 +328,7 @@ export default function DomainDetail() {
                           <span className="inline-block text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-md">{categoryLabels[domain.category]}</span>
                         </div>
                       </>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -238,32 +352,25 @@ export default function DomainDetail() {
                 </div>
               </SectionCard>
 
-              {/* 資料蒐集中狀態 或 正常內容 */}
-              {isNewDomain ? (
-                <DataCollectingState domain={domain.domain} />
-              ) : (
+              {mainContent ?? (
                 <>
-                  <DomainQuickStats domain={domain.domain} />
-                  <DomainAIReview domain={domain.domain} description={domain.summary} />
+                  <DomainQuickStats domain={domain.domain} data={dnsData} />
+                  <DomainAIReview domain={domain.domain} data={aiData} description={domain.summary} />
+                  <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
                 </>
               )}
             </div>
 
             {/* Right Column */}
             <div className="space-y-6">
-              {/* 只有有資料時才顯示 Tabs */}
-              {!isNewDomain && (
+              {isSuccess && (
                 <SectionCard>
-                  <Tabs defaultValue="dns" className="w-full">
-                    <TabsList className="w-full grid grid-cols-4 mb-4">
-                      <TabsTrigger value="dns" className="text-xs">{t("domain.tabDNS")}</TabsTrigger>
+                  <Tabs defaultValue="health" className="w-full">
+                    <TabsList className="w-full grid grid-cols-3 mb-4">
                       <TabsTrigger value="health" className="text-xs">{t("domain.tabHealth")}</TabsTrigger>
                       <TabsTrigger value="security" className="text-xs">{t("domain.tabSecurity")}</TabsTrigger>
                       <TabsTrigger value="timeline" className="text-xs">{t("domain.tabTimeline")}</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="dns">
-                      <DomainDNSCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
                     <TabsContent value="health">
                       <DomainHealthCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
                     </TabsContent>
@@ -277,8 +384,7 @@ export default function DomainDetail() {
                 </SectionCard>
               )}
 
-              {/* Related Domains with Comparison - 只有有資料時才顯示 */}
-              {!isNewDomain && relatedDomains.length > 0 && (
+              {isSuccess && relatedDomains.length > 0 && (
                 <DomainComparison
                   currentDomain={domain.domain}
                   relatedDomains={relatedDomains.map(d => ({ domain: d.domain, vibe: d.vibe }))}
@@ -295,9 +401,9 @@ export default function DomainDetail() {
               <div className="flex items-start gap-4">
                 <div className={cn(
                   "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0",
-                  isNewDomain ? "bg-muted" : "bg-brand-gradient"
+                  isFetching ? "bg-muted" : "bg-brand-gradient"
                 )}>
-                  {isNewDomain ? (
+                  {isFetching ? (
                     <Loader2 className="w-7 h-7 text-muted-foreground animate-spin" />
                   ) : (
                     <Globe className="w-7 h-7 text-primary-foreground" />
@@ -305,9 +411,9 @@ export default function DomainDetail() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h1 className="font-mono text-xl font-semibold tracking-tight truncate">{domain.domain}</h1>
-                  {isNewDomain ? (
+                  {isFetching ? (
                     <p className="text-sm text-muted-foreground mt-1">{t("domain.collecting")}</p>
-                  ) : (
+                  ) : isSuccess ? (
                     <>
                       <div className="flex items-center gap-2 mt-1">
                         <StatusIndicator status="good" label={t("domain.normal")} size="sm" />
@@ -317,7 +423,7 @@ export default function DomainDetail() {
                         <span className="inline-block text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{categoryLabels[domain.category]}</span>
                       </div>
                     </>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -340,26 +446,17 @@ export default function DomainDetail() {
               </div>
             </SectionCard>
 
-            {/* 資料蒐集中狀態 或 正常內容 */}
-            {isNewDomain ? (
-              <DataCollectingState domain={domain.domain} />
-            ) : (
+            {mainContent ?? (
               <>
-                {/* AI 點評 */}
-                <DomainAIReview domain={domain.domain} description={domain.summary} />
-
-                {/* 技術資訊 Tabs */}
+                <DomainAIReview domain={domain.domain} data={aiData} description={domain.summary} />
+                <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
                 <SectionCard>
-                  <Tabs defaultValue="dns" className="w-full">
-                    <TabsList className="w-full grid grid-cols-4 mb-4">
-                      <TabsTrigger value="dns" className="text-xs">{t("domain.tabDNS")}</TabsTrigger>
+                  <Tabs defaultValue="health" className="w-full">
+                    <TabsList className="w-full grid grid-cols-3 mb-4">
                       <TabsTrigger value="health" className="text-xs">{t("domain.tabHealth")}</TabsTrigger>
                       <TabsTrigger value="security" className="text-xs">{t("domain.tabSecurity")}</TabsTrigger>
                       <TabsTrigger value="timeline" className="text-xs">{t("domain.tabTimeline")}</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="dns">
-                      <DomainDNSCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
-                    </TabsContent>
                     <TabsContent value="health">
                       <DomainHealthCard domain={domain.domain} className="border-0 p-0 bg-transparent" />
                     </TabsContent>
@@ -372,7 +469,6 @@ export default function DomainDetail() {
                   </Tabs>
                 </SectionCard>
 
-                {/* Related Domains with Comparison */}
                 {relatedDomains.length > 0 && (
                   <DomainComparison
                     currentDomain={domain.domain}

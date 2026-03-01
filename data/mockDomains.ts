@@ -1,6 +1,7 @@
-import type { DomainData } from "@/components/domain/DomainCard";
+import type { DomainData as DomainCardData } from "@/components/domain/DomainCard";
 
-export type { DomainData };
+export type DomainData = DomainCardData & { expiresAt?: string };
+
 
 export const trendingDomains: DomainData[] = [
   {
@@ -98,6 +99,7 @@ export const expiringDomains: DomainData[] = [
     popularity: "low",
     age: "6 years",
     lastActive: "6 months ago",
+    expiresAt: "2026-03-06",
   },
   {
     domain: "cryptomarket.net",
@@ -107,6 +109,7 @@ export const expiringDomains: DomainData[] = [
     popularity: "low",
     age: "5 years",
     lastActive: "1 year ago",
+    expiresAt: "2026-03-13",
   },
   {
     domain: "socialapp.co",
@@ -116,6 +119,7 @@ export const expiringDomains: DomainData[] = [
     popularity: "low",
     age: "8 years",
     lastActive: "2 years ago",
+    expiresAt: "2026-03-29",
   },
   {
     domain: "ecomstore.shop",
@@ -125,6 +129,7 @@ export const expiringDomains: DomainData[] = [
     popularity: "low",
     age: "3 years",
     lastActive: "1 year ago",
+    expiresAt: "2026-04-15",
   },
 ];
 

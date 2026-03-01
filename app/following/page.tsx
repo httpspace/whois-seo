@@ -1,2 +1,2 @@
 'use client'
-export { default } from "@/pages/FollowingPage";
+export { default } from "@/page-components/FollowingPage";

@@ -1,19 +1,20 @@
 import { ReactNode } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 
-interface SectionCardProps {
+interface SectionCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
   noPadding?: boolean;
 }
 
-export function SectionCard({ children, className, noPadding }: SectionCardProps) {
+export function SectionCard({ children, className, noPadding, ...props }: SectionCardProps) {
   return (
     <div className={cn(
       "bg-card rounded-2xl border border-border/40",
       !noPadding && "p-4",
       className
-    )}>
+    )} {...props}>
       {children}
     </div>
   );

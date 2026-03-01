@@ -1,6 +1,6 @@
 'use client'
 
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
@@ -8,12 +8,16 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
+import { useAuthStore } from "@/store/authStore";
+import { useNavigate } from "@/lib/router-compat";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t, locale, setLocale } = useLanguage();
+  const { user, isLoggedIn, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -26,6 +30,8 @@ export default function Settings() {
   const languageOptions = [
     { value: "zh-TW" as const, label: "繁體中文", flag: "🇹🇼" },
     { value: "en" as const, label: "English", flag: "🇺🇸" },
+    { value: "es" as const, label: "Español", flag: "🇪🇸" },
+    { value: "fr" as const, label: "Français", flag: "🇫🇷" },
   ];
 
   return (
@@ -99,8 +105,36 @@ export default function Settings() {
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("settings.account")}</h2>
             </div>
             <div className="px-4 lg:px-6">
-              <p className="text-sm text-muted-foreground mb-3">{t("settings.accountDesc")}</p>
-              <button className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium">{t("settings.signIn")}</button>
+              {isLoggedIn && user ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/40">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20 shrink-0">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-primary">{user.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground">{user.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary">{t("user.member")}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { logout(); navigate("/login"); }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 hover:bg-destructive/5 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {t("user.signOut")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">{t("settings.accountDesc")}</p>
+                  <button onClick={() => navigate("/login")} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium">{t("settings.signIn")}</button>
+                </>
+              )}
             </div>
           </section>
 

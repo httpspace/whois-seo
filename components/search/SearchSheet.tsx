@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
-import { Search, X, ArrowUpRight, Clock, TrendingUp, Globe } from "lucide-react";
+import { Search, X, ArrowUpRight, Clock } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
-import { allDomains } from "@/data/mockDomains";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 
@@ -26,7 +25,7 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, onOpenChange]);
 
-  const suggestions = query.length > 0 ? allDomains.filter(d => d.domain.toLowerCase().includes(query.toLowerCase())).slice(0, 6) : [];
+  const suggestions = query.length > 0 ? recentSearches.filter(r => r.includes(query.toLowerCase())).slice(0, 6) : [];
 
   const handleSearch = (q: string) => {
     const cleanDomain = q.trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
@@ -52,9 +51,9 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
             {query.length > 0 ? (
               <div className="p-2">
                 {suggestions.length > 0 ? suggestions.map(domain => (
-                  <button key={domain.domain} onClick={() => handleSearch(domain.domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors text-left">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Globe className="w-5 h-5 text-primary" /></div>
-                    <div className="flex-1 min-w-0"><p className="font-mono text-sm font-medium truncate">{domain.domain}</p><p className="text-xs text-muted-foreground truncate">{domain.vibe}</p></div>
+                  <button key={domain} onClick={() => handleSearch(domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors text-left">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Clock className="w-5 h-5 text-primary" /></div>
+                    <p className="font-mono text-sm font-medium truncate flex-1 min-w-0">{domain}</p>
                     <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )) : <div className="p-4 text-center text-sm text-muted-foreground">{t("search.noMatches")}</div>}
@@ -76,7 +75,7 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("search.recent")}</p>
                       <button onClick={clearRecentSearches} className="text-xs text-muted-foreground hover:text-foreground transition-colors">{t("search.clear")}</button>
                     </div>
-                    {recentSearches.slice(0, 4).map(search => (
+                    {recentSearches.slice(0, 6).map(search => (
                       <button key={search} onClick={() => handleSearch(search)} className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors text-left">
                         <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center"><Clock className="w-5 h-5 text-muted-foreground" /></div>
                         <span className="font-mono text-sm">{search}</span>
@@ -84,16 +83,9 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
                     ))}
                   </div>
                 )}
-                <div>
-                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("search.trending")}</p>
-                  {allDomains.slice(0, 4).map((domain, i) => (
-                    <button key={domain.domain} onClick={() => handleSearch(domain.domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors text-left">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><TrendingUp className="w-5 h-5 text-amber-500" /></div>
-                      <p className="font-mono text-sm flex-1 truncate">{domain.domain}</p>
-                      <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                    </button>
-                  ))}
-                </div>
+                {recentSearches.length === 0 && (
+                  <div className="py-8 text-center text-sm text-muted-foreground">輸入域名以開始搜尋</div>
+                )}
               </div>
             )}
           </div>
@@ -120,9 +112,9 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
             {suggestions.length > 0 && (
               <div className="space-y-1">
                 {suggestions.map(domain => (
-                  <button key={domain.domain} onClick={() => handleSearch(domain.domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors text-left">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Globe className="w-5 h-5 text-primary" /></div>
-                    <div className="flex-1 min-w-0"><p className="font-mono text-sm font-medium truncate">{domain.domain}</p><p className="text-xs text-muted-foreground truncate">{domain.vibe}</p></div>
+                  <button key={domain} onClick={() => handleSearch(domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors text-left">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Clock className="w-5 h-5 text-primary" /></div>
+                    <p className="font-mono text-sm font-medium truncate flex-1 min-w-0">{domain}</p>
                     <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                   </button>
                 ))}
@@ -147,7 +139,7 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
                   <button onClick={clearRecentSearches} className="text-xs text-muted-foreground hover:text-foreground transition-colors">{t("search.clear")}</button>
                 </div>
                 <div className="space-y-1">
-                  {recentSearches.slice(0, 5).map(search => (
+                  {recentSearches.slice(0, 8).map(search => (
                     <button key={search} onClick={() => handleSearch(search)} className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors text-left">
                       <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center"><Clock className="w-5 h-5 text-muted-foreground" /></div>
                       <span className="font-mono text-sm">{search}</span>
@@ -156,18 +148,9 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
                 </div>
               </div>
             )}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t("search.trending")}</p>
-              <div className="space-y-1">
-                {allDomains.slice(0, 5).map((domain, i) => (
-                  <button key={domain.domain} onClick={() => handleSearch(domain.domain)} className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors text-left">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><TrendingUp className="w-5 h-5 text-amber-500" /></div>
-                    <p className="font-mono text-sm flex-1 truncate">{domain.domain}</p>
-                    <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {recentSearches.length === 0 && (
+              <div className="py-12 text-center text-sm text-muted-foreground">輸入域名以開始搜尋</div>
+            )}
           </>
         )}
       </div>

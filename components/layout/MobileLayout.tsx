@@ -7,6 +7,7 @@ import { SearchSheet } from "@/components/search/SearchSheet";
 import { ThemeToggleCompact } from "@/components/theme/ThemeToggle";
 import { LanguageToggleCompact } from "@/components/theme/LanguageToggle";
 import { useAppStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/authStore";
 import { useLanguage } from "@/i18n/useLanguage";
 
 interface MobileLayoutProps {
@@ -21,7 +22,9 @@ export function MobileLayout({ children, showHeader = false, headerTitle }: Mobi
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const { followedDomains } = useAppStore();
+  const { user, isLoggedIn, unreadCount } = useAuthStore();
   const { t } = useLanguage();
+  const unread = unreadCount();
 
   const isHomePage = location.pathname === "/";
   const canGoBack = typeof window !== "undefined" ? window.history.length > 1 && !isHomePage : false;
@@ -30,7 +33,7 @@ export function MobileLayout({ children, showHeader = false, headerTitle }: Mobi
     { icon: ArrowLeft, label: t("tab.back"), action: "back" as const },
     { icon: Home, label: t("tab.home"), path: "/" },
     { icon: Search, label: t("tab.search"), action: "search" as const },
-    { icon: Bell, label: t("tab.follow"), path: "/following" },
+    { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
     { icon: User, label: t("tab.me"), path: "/settings" },
   ];
 
@@ -39,14 +42,30 @@ export function MobileLayout({ children, showHeader = false, headerTitle }: Mobi
       {showHeader && (
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border/40 safe-area-pt">
           <div className="flex items-center justify-between px-4 h-14">
-            <span className="font-display font-semibold text-gradient-brand">{headerTitle || "Whoisvibe"}</span>
+            <div className="flex items-center gap-1.5">
+              <img src="/logo.webp" alt="Whoisvibe" className="w-6 h-6 object-contain" />
+              <span className="font-display font-semibold text-gradient-brand">{headerTitle || "Whoisvibe"}</span>
+            </div>
             <div className="flex items-center gap-1">
               <LanguageToggleCompact />
               <ThemeToggleCompact />
-              <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+              <Link href="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <Bell className="w-5 h-5 text-brand-violet" />
-                {followedDomains.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-brand-gradient rounded-full glow-brand-sm" />}
-              </button>
+                {unread > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-brand-gradient rounded-full glow-brand-sm" />}
+              </Link>
+              {isLoggedIn && user ? (
+                <Link href="/settings" className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-bold text-primary">{user.name.charAt(0).toUpperCase()}</span>
+                  )}
+                </Link>
+              ) : (
+                <Link href="/login" className="p-2 rounded-full hover:bg-muted transition-colors">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </Link>
+              )}
             </div>
           </div>
         </header>
@@ -60,7 +79,7 @@ export function MobileLayout({ children, showHeader = false, headerTitle }: Mobi
             const isSearch = "action" in tab && tab.action === "search";
             const isBack = "action" in tab && tab.action === "back";
             const isActive = !isSearch && !isBack && "path" in tab && location.pathname === tab.path;
-            const hasNotification = "path" in tab && tab.path === "/following" && followedDomains.length > 0;
+            const hasNotification = "path" in tab && tab.path === "/notifications" && unread > 0;
 
             if (isBack) {
               return (

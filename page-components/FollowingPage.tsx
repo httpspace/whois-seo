@@ -1,22 +1,18 @@
 'use client'
 
 import { Link } from "@/lib/router-compat";
-import { BellOff, Search, Globe, Plus, Sparkles, ArrowLeft, Bell } from "lucide-react";
+import { BellOff, Search, Globe, ArrowLeft, Bell } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard, SectionHeader } from "@/components/ui/section-card";
 import { ListItem } from "@/components/ui/list-item";
 import { useAppStore } from "@/store/appStore";
-import { getDomainByName, allDomains } from "@/data/mockDomains";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 
 export default function FollowingPage() {
-  const { followedDomains, toggleFollowDomain } = useAppStore();
+  const { followedDomains } = useAppStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
-  
-  const followedDomainData = followedDomains.map(d => getDomainByName(d)).filter(Boolean);
-  const suggestedDomains = allDomains.filter(d => !followedDomains.includes(d.domain)).slice(0, 5);
 
   return (
     <ResponsiveLayout>
@@ -76,34 +72,24 @@ export default function FollowingPage() {
               <SectionCard>
                 <SectionHeader title={t("following.trackedDomains")} />
                 <div className="space-y-1">
-                  {followedDomainData.map((domain) => domain && (
-                    <ListItem key={domain.domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain.domain} subtitle={domain.vibe || domain.summary?.slice(0, 40)} href={`/domain/${domain.domain}`} />
+                  {followedDomains.map((domain) => (
+                    <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={`/domain/${domain}`} />
                   ))}
                 </div>
               </SectionCard>
             </>
           )}
 
-          <SectionCard>
-            <SectionHeader title={t("following.suggested")} subtitle={t("following.suggestedDesc")} />
-            <div className="space-y-1">
-              {suggestedDomains.map((domain) => (
-                <ListItem
-                  key={domain.domain}
-                  icon={Sparkles}
-                  iconBg="bg-amber-500/10"
-                  iconColor="text-amber-500"
-                  title={domain.domain}
-                  subtitle={domain.vibe}
-                  showChevron={false}
-                  rightElement={
-                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFollowDomain(domain.domain); }} className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
-                      <Plus className="w-4 h-4 text-primary" />
-                    </button>
-                  }
-                  href={`/domain/${domain.domain}`}
-                />
-              ))}
+          <SectionCard className="bg-muted/30">
+            <div className="flex items-start gap-3">
+              <Search className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold mb-1">{t("following.suggested")}</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-3">{t("following.suggestedDesc")}</p>
+                <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                  {t("following.findDomains")}
+                </Link>
+              </div>
             </div>
           </SectionCard>
         </div>

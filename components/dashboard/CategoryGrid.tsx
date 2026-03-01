@@ -1,7 +1,15 @@
 import { Link } from "@/lib/router-compat";
 import { Badge } from "@/components/ui/badge";
-import { categories } from "@/data/mockDomains";
 import { cn } from "@/lib/utils";
+
+const categories = [
+  { id: "tech", label: "Technology", count: 156, color: "tech" as const },
+  { id: "business", label: "Business", count: 89, color: "business" as const },
+  { id: "media", label: "Media", count: 67, color: "media" as const },
+  { id: "ecommerce", label: "E-commerce", count: 45, color: "ecommerce" as const },
+  { id: "finance", label: "Finance", count: 34, color: "finance" as const },
+  { id: "social", label: "Social", count: 28, color: "social" as const },
+];
 
 export function CategoryGrid() {
   return (

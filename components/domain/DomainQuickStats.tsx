@@ -1,52 +1,52 @@
-import { Globe, Clock, Shield, Activity, Users, Server } from "lucide-react";
+import { Clock, Server, Building2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { DNSData } from "@/types/domain";
 
-interface BasicMetrics {
-  domainAge: string;
-  registrar: string;
-  serverLocation: string;
-  sslValid: boolean;
-  isActive: boolean;
-  popularity: "high" | "medium" | "low";
+function calcDomainAge(createDate?: string): string {
+  if (!createDate) return '—';
+  const created = new Date(createDate);
+  if (isNaN(created.getTime())) return '—';
+  const years = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24 * 365));
+  return years > 0 ? `${years} 年` : '< 1 年';
 }
 
-// 模擬基本資訊
-const getBasicMetrics = (domain: string): BasicMetrics => ({
-  domainAge: "8 年",
-  registrar: "Cloudflare",
-  serverLocation: "美國",
-  sslValid: true,
-  isActive: true,
-  popularity: "high",
-});
+export function DomainQuickStats({ domain, data, className }: { domain: string; data?: DNSData | null; className?: string }) {
+  if (data === undefined) {
+    return (
+      <div className={cn("grid grid-cols-3 gap-2 text-center", className)}>
+        {[0, 1, 2].map(i => (
+          <div key={i} className="p-3 rounded-xl bg-muted/50 flex flex-col items-center gap-1">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-8 bg-muted rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-export function DomainQuickStats({ domain, className }: { domain: string; className?: string }) {
-  const metrics = getBasicMetrics(domain);
-  
-  const popularityLabels = {
-    high: "高關注",
-    medium: "中等",
-    low: "低",
-  };
+  const registrar = data?.registrar ?? '—';
+  const country = data?.registrant_country ?? '—';
+  const domainAge = calcDomainAge(data?.create_date);
 
   return (
     <div className={cn("grid grid-cols-3 gap-2 text-center", className)}>
       <div className="p-3 rounded-xl bg-muted/50">
         <Clock className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-        <p className="text-sm font-semibold">{metrics.domainAge}</p>
+        <p className="text-sm font-semibold">{domainAge}</p>
         <p className="text-2xs text-muted-foreground">網齡</p>
       </div>
 
       <div className="p-3 rounded-xl bg-muted/50">
         <Server className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-        <p className="text-sm font-semibold">{metrics.serverLocation}</p>
-        <p className="text-2xs text-muted-foreground">伺服器</p>
+        <p className="text-sm font-semibold truncate">{country}</p>
+        <p className="text-2xs text-muted-foreground">國家</p>
       </div>
 
       <div className="p-3 rounded-xl bg-muted/50">
-        <Activity className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-        <p className="text-sm font-semibold">{popularityLabels[metrics.popularity]}</p>
-        <p className="text-2xs text-muted-foreground">熱度</p>
+        <Building2 className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+        <p className="text-sm font-semibold truncate">{registrar}</p>
+        <p className="text-2xs text-muted-foreground">註冊商</p>
       </div>
     </div>
   );

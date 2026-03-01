@@ -1,25 +1,42 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
-import { Search, ChevronRight, Globe, TrendingUp, Clock, Timer, Activity, Grid3X3 } from "lucide-react";
+import { Search, ChevronRight, Globe, TrendingUp, Clock, Timer, Activity } from "lucide-react";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard, SectionHeader } from "@/components/ui/section-card";
 import { ListItem } from "@/components/ui/list-item";
 import { TabSwitch } from "@/components/ui/tab-switch";
 import { SearchSheet } from "@/components/search/SearchSheet";
 import { DesktopSidebar, MobileStatsSummary } from "@/components/dashboard/DesktopSidebar";
-import { trendingDomains, recentDomains, expiringDomains, categories, getDomainByName } from "@/data/mockDomains";
 import { useAppStore } from "@/store/appStore";
+import { fetchPopular, fetchRecent } from "@/lib/api";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { cn } from "@/lib/utils";
 
-export default function Index() {
+type PopularItem = { domain: string; hits: number };
+type RecentItem = { domain: string; updated: number };
+
+interface IndexProps {
+  initialPopular?: PopularItem[];
+  initialRecent?: RecentItem[];
+}
+
+export default function Index({ initialPopular, initialRecent }: IndexProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  // Initialise with build-time data so crawlers see real content immediately
+  const [popularDomains, setPopularDomains] = useState<PopularItem[] | null>(initialPopular ?? null);
+  const [recentDomains, setRecentDomains] = useState<RecentItem[] | null>(initialRecent ?? null);
   const { followedDomains } = useAppStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
+
+  // Refresh with live data after mount (keeps content fresh beyond build snapshot)
+  useEffect(() => {
+    fetchPopular().then(data => { if (data) setPopularDomains(data); });
+    fetchRecent(isDesktop ? 8 : 5).then(data => { if (data) setRecentDomains(data); });
+  }, [isDesktop]);
 
   const browseTabs = [t("nav.trending"), t("nav.recent"), t("nav.expiring")];
   const browseKeyMap: Record<string, "Trending" | "Recent" | "Expiring"> = {
@@ -28,16 +45,64 @@ export default function Index() {
     [t("nav.expiring")]: "Expiring",
   };
   const [browseTab, setBrowseTab] = useState(browseTabs[0]);
+  const activeKey = browseKeyMap[browseTab] || "Trending";
 
-  const browseConfig = {
-    Trending: { data: trendingDomains, icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-500/10", path: "/trending" },
-    Recent: { data: recentDomains, icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10", path: "/recent" },
-    Expiring: { data: expiringDomains, icon: Timer, color: "text-red-500", bg: "bg-red-500/10", path: "/expiring" },
+  const BrowseContent = () => {
+    if (activeKey === "Trending") {
+      if (popularDomains === null) {
+        return (
+          <div className="space-y-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
+                <div className="w-8 h-8 rounded-lg bg-muted shrink-0" />
+                <div className="flex-1 h-3.5 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div className="space-y-1">
+          {popularDomains.slice(0, isDesktop ? 8 : 5).map((item) => (
+            <ListItem key={item.domain} icon={TrendingUp} iconBg="bg-amber-500/10" iconColor="text-amber-500" title={item.domain} subtitle={`${item.hits.toLocaleString()} 次查詢`} href={`/domain/${item.domain}`} />
+          ))}
+        </div>
+      );
+    }
+    if (activeKey === "Recent") {
+      if (recentDomains === null) {
+        return (
+          <div className="space-y-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
+                <div className="w-8 h-8 rounded-lg bg-muted shrink-0" />
+                <div className="flex-1 h-3.5 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        );
+      }
+      if (recentDomains.length === 0) {
+        return <p className="text-sm text-muted-foreground text-center py-6">{t("recent.empty")}</p>;
+      }
+      return (
+        <div className="space-y-1">
+          {recentDomains.map(({ domain }) => (
+            <ListItem key={domain} icon={Clock} iconBg="bg-blue-500/10" iconColor="text-blue-500" title={domain} href={`/domain/${domain}`} />
+          ))}
+        </div>
+      );
+    }
+    // Expiring
+    return (
+      <div className="py-6 text-center">
+        <Timer className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">到期域名功能正在開發中，敬請期待。</p>
+      </div>
+    );
   };
 
-  const trackedDomains = followedDomains.map(d => getDomainByName(d)).filter(Boolean).slice(0, 3);
-  const activeKey = browseKeyMap[browseTab] || "Trending";
-  const { data, icon: BrowseIcon, color, bg, path } = browseConfig[activeKey];
+  const browsePath = activeKey === "Trending" ? "/trending" : activeKey === "Recent" ? "/recent" : "/expiring";
 
   return (
     <ResponsiveLayout showMobileHeader mobileHeaderTitle="Whoisvibe">
@@ -70,15 +135,15 @@ export default function Index() {
               </div>
 
               {/* Following Preview */}
-              {trackedDomains.length > 0 && (
+              {followedDomains.length > 0 && (
                 <SectionCard>
-                  <SectionHeader 
+                  <SectionHeader
                     title={t("index.followingDomains")}
                     action={<Link href="/following" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
                   />
                   <div className="space-y-1">
-                    {trackedDomains.map(domain => domain && (
-                      <ListItem key={domain.domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain.domain} subtitle={domain.vibe} href={`/domain/${domain.domain}`} />
+                    {followedDomains.slice(0, 3).map(domain => (
+                      <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={`/domain/${domain}`} />
                     ))}
                   </div>
                 </SectionCard>
@@ -90,33 +155,10 @@ export default function Index() {
                   <h2 className="text-base font-semibold">{t("index.browseDomains")}</h2>
                   <TabSwitch tabs={browseTabs} activeTab={browseTab} onTabChange={setBrowseTab} />
                 </div>
-                <div className="space-y-1">
-                  {data.slice(0, 8).map(domain => (
-                    <ListItem key={domain.domain} icon={BrowseIcon} iconBg={bg} iconColor={color} title={domain.domain} subtitle={domain.vibe || domain.summary?.slice(0, 40)} href={`/domain/${domain.domain}`} />
-                  ))}
-                </div>
-                <Link href={path} className="flex items-center justify-center gap-1 mt-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <BrowseContent />
+                <Link href={browsePath} className="flex items-center justify-center gap-1 mt-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                   {t("index.viewAllLower")} <ChevronRight className="w-4 h-4" />
                 </Link>
-              </SectionCard>
-
-              {/* Categories */}
-              <SectionCard>
-                <SectionHeader 
-                  title={t("index.categories")}
-                  action={<Link href="/categories" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
-                />
-                <div className="grid grid-cols-3 gap-3">
-                  {categories.slice(0, 6).map(cat => (
-                    <Link key={cat.id} href={`/categories/${cat.id}`} className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                      <Grid3X3 className="w-4 h-4 text-muted-foreground" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{cat.label}</p>
-                        <p className="text-xs text-muted-foreground">{cat.count}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
               </SectionCard>
             </div>
             <DesktopSidebar />
@@ -153,15 +195,15 @@ export default function Index() {
               </div>
             </button>
 
-            {trackedDomains.length > 0 && (
+            {followedDomains.length > 0 && (
               <SectionCard>
-                <SectionHeader 
+                <SectionHeader
                   title={t("index.followingDomains")}
                   action={<Link href="/following" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
                 />
                 <div className="space-y-1">
-                  {trackedDomains.map(domain => domain && (
-                    <ListItem key={domain.domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain.domain} subtitle={domain.vibe} href={`/domain/${domain.domain}`} />
+                  {followedDomains.slice(0, 3).map(domain => (
+                    <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={`/domain/${domain}`} />
                   ))}
                 </div>
               </SectionCard>
@@ -172,32 +214,10 @@ export default function Index() {
                 <h2 className="text-base font-semibold">{t("index.browseDomains")}</h2>
                 <TabSwitch tabs={browseTabs} activeTab={browseTab} onTabChange={setBrowseTab} />
               </div>
-              <div className="space-y-1">
-                {data.slice(0, 5).map(domain => (
-                  <ListItem key={domain.domain} icon={BrowseIcon} iconBg={bg} iconColor={color} title={domain.domain} subtitle={domain.vibe || domain.summary?.slice(0, 40)} href={`/domain/${domain.domain}`} />
-                ))}
-              </div>
-              <Link href={path} className="flex items-center justify-center gap-1 mt-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <BrowseContent />
+              <Link href={browsePath} className="flex items-center justify-center gap-1 mt-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 {t("index.viewAllLower")} <ChevronRight className="w-4 h-4" />
               </Link>
-            </SectionCard>
-
-            <SectionCard>
-              <SectionHeader 
-                title={t("index.categories")}
-                action={<Link href="/categories" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                {categories.slice(0, 4).map(cat => (
-                  <Link key={cat.id} href={`/categories/${cat.id}`} className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <Grid3X3 className="w-4 h-4 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{cat.label}</p>
-                      <p className="text-xs text-muted-foreground">{cat.count}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
             </SectionCard>
           </div>
         )}

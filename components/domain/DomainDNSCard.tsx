@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Server, Globe, ChevronDown, ChevronUp, Copy, Check, Calendar, Shield, Building2, ExternalLink } from "lucide-react";
+import { Server, ChevronDown, ChevronUp, Copy, Check, Calendar, Building2, ExternalLink, Loader2 } from "lucide-react";
 import { Link } from "@/lib/router-compat";
-import { SectionCard, SectionHeader } from "@/components/ui/section-card";
+import { SectionCard } from "@/components/ui/section-card";
 import { cn } from "@/lib/utils";
+import type { DNSData } from "@/types/domain";
 
 interface DNSRecord {
   type: string;
@@ -10,7 +11,7 @@ interface DNSRecord {
   ttl: string;
 }
 
-interface RegistrarInfo {
+interface NormalizedInfo {
   registrar: string;
   registrarUrl: string;
   registrantOrg: string;
@@ -23,29 +24,84 @@ interface RegistrarInfo {
   dnsRecords: DNSRecord[];
 }
 
-// 模擬 DNS 資料
-const mockDNSInfo: RegistrarInfo = {
-  registrar: "MarkMonitor Inc.",
-  registrarUrl: "https://www.markmonitor.com",
-  registrantOrg: "OpenAI, Inc.",
-  registrantCountry: "US",
-  createdDate: "2015-04-06",
-  expiresDate: "2026-04-06",
-  updatedDate: "2024-03-15",
-  status: ["clientDeleteProhibited", "clientTransferProhibited", "clientUpdateProhibited"],
-  nameservers: ["ns1.cloudflare.com", "ns2.cloudflare.com"],
-  dnsRecords: [
-    { type: "A", value: "104.18.7.192", ttl: "300" },
-    { type: "AAAA", value: "2606:4700::6812:7c0", ttl: "300" },
-    { type: "MX", value: "aspmx.l.google.com", ttl: "3600" },
-    { type: "TXT", value: "v=spf1 include:_spf.google.com ~all", ttl: "3600" },
-  ],
-};
+function normalizeDNSData(data: DNSData): NormalizedInfo {
+  // 從 dnsRecords 裡抽出 NS records 作為 nameservers
+  const nsFromRecords = (data.dnsRecords ?? [])
+    .filter(r => r.dnsType === 'NS')
+    .map(r => r.singleName ?? '');
 
-export function DomainDNSCard({ domain, className }: { domain: string; className?: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const nameservers = data.nameservers ?? data.name_servers ?? nsFromRecords;
+
+  // 支援 camelCase (dnsRecords/dnsType) 和 snake_case (dns_records/dns_type)
+  const rawRecords = data.dnsRecords ?? data.dns_records ?? [];
+  const dnsRecords: DNSRecord[] = rawRecords.map(r => {
+    const type = ('dnsType' in r ? r.dnsType : r.dns_type) ?? '';
+    const value = r.address ?? r.target ?? ('singleName' in r ? r.singleName : undefined)
+      ?? (r.strings?.[0] ?? '');
+    const ttl = String(r.ttl ?? '');
+    return { type, value, ttl };
+  });
+
+  return {
+    registrar: data.registrar ?? '',
+    registrarUrl: data.registrar_url ?? '',
+    registrantOrg: data.registrant_org ?? '',
+    registrantCountry: data.registrant_country ?? '',
+    createdDate: data.create_date ?? '',
+    expiresDate: data.expiry_date ?? '',
+    updatedDate: data.update_date ?? '',
+    status: data.domain_status ?? [],
+    nameservers,
+    dnsRecords,
+  };
+}
+
+export function DomainDNSCard({ domain, data, className, defaultExpanded = false }: {
+  domain: string;
+  data?: DNSData | null;
+  className?: string;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const info = mockDNSInfo;
+
+  if (data === undefined) {
+    // Loading state
+    return (
+      <SectionCard className={className}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Server className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold">DNS / 註冊資訊</h3>
+            <div className="flex items-center gap-1 mt-1">
+              <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">載入中…</span>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (data === null) {
+    return (
+      <SectionCard className={className}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+            <Server className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold">DNS / 註冊資訊</h3>
+            <p className="text-xs text-muted-foreground">無法取得資料</p>
+          </div>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  const info = normalizeDNSData(data);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -53,8 +109,9 @@ export function DomainDNSCard({ domain, className }: { domain: string; className
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const daysUntilExpiry = Math.ceil((new Date(info.expiresDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const expiryStatus = daysUntilExpiry < 30 ? "danger" : daysUntilExpiry < 90 ? "warning" : "safe";
+  const expiryMs = info.expiresDate ? new Date(info.expiresDate).getTime() - Date.now() : null;
+  const daysUntilExpiry = expiryMs !== null ? Math.ceil(expiryMs / (1000 * 60 * 60 * 24)) : null;
+  const expiryStatus = daysUntilExpiry === null ? "safe" : daysUntilExpiry < 30 ? "danger" : daysUntilExpiry < 90 ? "warning" : "safe";
 
   return (
     <SectionCard className={className}>
@@ -80,7 +137,7 @@ export function DomainDNSCard({ domain, className }: { domain: string; className
             expiryStatus === "warning" && "bg-signal-stale/10 text-signal-stale",
             expiryStatus === "danger" && "bg-destructive/10 text-destructive",
           )}>
-            {daysUntilExpiry} 天
+            {daysUntilExpiry !== null ? `${daysUntilExpiry} 天` : '—'}
           </span>
           {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
