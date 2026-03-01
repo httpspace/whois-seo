@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Server, ChevronDown, ChevronUp, Copy, Check, Calendar, Building2, ExternalLink, Loader2 } from "lucide-react";
-import { Link } from "@/lib/router-compat";
+import { Server, ChevronDown, ChevronUp, Copy, Check, Calendar, Building2, Loader2 } from "lucide-react";
 import { SectionCard } from "@/components/ui/section-card";
 import { cn } from "@/lib/utils";
 import type { DNSData } from "@/types/domain";
@@ -49,7 +48,7 @@ function normalizeDNSData(data: DNSData): NormalizedInfo {
     registrantCountry: data.registrant_country ?? '',
     createdDate: data.create_date ?? '',
     expiresDate: data.expiry_date ?? '',
-    updatedDate: data.update_date ?? '',
+    updatedDate: data._updated ? new Date(data._updated * 1000).toISOString().slice(0, 10) : '',
     status: data.domain_status ?? [],
     nameservers,
     dnsRecords,
@@ -151,12 +150,6 @@ export function DomainDNSCard({ domain, data, className, defaultExpanded = false
         <div className="p-4 rounded-xl bg-muted/50 mb-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-muted-foreground uppercase">註冊者</span>
-            <Link 
-              href={`/registrant/${encodeURIComponent(info.registrantOrg)}`}
-              className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
-            >
-              查看相關網域 <ExternalLink className="w-3 h-3" />
-            </Link>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center">
@@ -179,7 +172,7 @@ export function DomainDNSCard({ domain, data, className, defaultExpanded = false
           <div className="p-3 rounded-xl bg-muted/30 text-center">
             <Calendar className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
             <p className="text-xs font-medium">{info.updatedDate}</p>
-            <p className="text-2xs text-muted-foreground">更新日期</p>
+            <p className="text-2xs text-muted-foreground">資料更新</p>
           </div>
           <div className={cn(
             "p-3 rounded-xl text-center",

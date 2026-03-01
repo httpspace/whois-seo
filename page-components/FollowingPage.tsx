@@ -44,8 +44,11 @@ export default function FollowingPage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
 
+  const [hydrated, setHydrated] = useState(false);
   const [metas, setMetas] = useState<Record<string, DomainMeta>>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
     if (!isLoggedIn || followedDomains.length === 0) return;
@@ -100,7 +103,13 @@ export default function FollowingPage() {
         )}
 
         <div className="px-4 py-5 space-y-5 lg:py-8 lg:px-6">
-          {!isLoggedIn ? (
+          {!hydrated ? (
+            <div className="flex flex-col gap-3 py-8">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : !isLoggedIn ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-5">
                 <Bell className="w-7 h-7 text-muted-foreground" />

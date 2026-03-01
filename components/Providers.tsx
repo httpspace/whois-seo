@@ -13,13 +13,18 @@ import { useAppStore } from "@/store/appStore";
 // and loads followedDomains from D1 if the user is logged in.
 function StoreRehydrator() {
   useEffect(() => {
-    useAppStore.persist.rehydrate();
-    useAuthStore.persist.rehydrate();
-    useAuthStore.getState().checkAndClearExpired();
-    // followedDomains is D1-authoritative: load from server on every mount
-    if (useAuthStore.getState().isLoggedIn) {
-      useAppStore.getState().syncFollowsFromServer();
-    }
+    const init = async () => {
+      await Promise.all([
+        useAppStore.persist.rehydrate(),
+        useAuthStore.persist.rehydrate(),
+      ]);
+      useAuthStore.getState().checkAndClearExpired();
+      // followedDomains is D1-authoritative: load from server on every mount
+      if (useAuthStore.getState().isLoggedIn) {
+        useAppStore.getState().syncFollowsFromServer();
+      }
+    };
+    init();
   }, []);
   return null;
 }

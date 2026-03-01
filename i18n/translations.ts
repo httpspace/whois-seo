@@ -49,6 +49,7 @@ export const translations = {
   "domain.collectingInfo": { "zh-TW": "正在蒐集相關資訊，請稍候...", en: "Collecting information, please wait...", es: "Recopilando información, espera...", fr: "Collecte d'informations, veuillez patienter..." },
   "domain.autoUpdate": { "zh-TW": "資料蒐集完成後將自動更新", en: "Will auto-update when data collection is complete", es: "Se actualizará automáticamente al completar", fr: "Mise à jour automatique à la fin de la collecte" },
   "domain.collectingLabel": { "zh-TW": "蒐集中...", en: "Collecting...", es: "Recopilando...", fr: "Collecte..." },
+  "domain.lastUpdated": { "zh-TW": "最近更新", en: "Last updated", es: "Última actualización", fr: "Dernière mise à jour" },
   "domain.done": { "zh-TW": "完成", en: "Done", es: "Listo", fr: "Terminé" },
   "domain.follow": { "zh-TW": "追蹤", en: "Follow", es: "Seguir", fr: "Suivre" },
   "domain.following": { "zh-TW": "追蹤中", en: "Following", es: "Siguiendo", fr: "Suivi" },
@@ -125,6 +126,9 @@ export const translations = {
   "following.suggested": { "zh-TW": "推薦", en: "Suggested", es: "Sugeridos", fr: "Suggérés" },
   "following.suggestedDesc": { "zh-TW": "您可能感興趣的熱門網域", en: "Popular domains you might want to track", es: "Dominios populares que podrían interesarte", fr: "Domaines populaires qui pourraient vous intéresser" },
   "following.view": { "zh-TW": "查看", en: "View", es: "Ver", fr: "Voir" },
+  "following.loginRequired": { "zh-TW": "請登入以使用追蹤功能", en: "Sign in to use follow feature", es: "Inicia sesión para seguir dominios", fr: "Connectez-vous pour suivre des domaines" },
+  "following.loginRequiredDesc": { "zh-TW": "追蹤功能需要登入帳號，您的追蹤清單將同步至雲端。", en: "Sign in to track domains. Your follow list will sync across devices.", es: "Inicia sesión para rastrear dominios y sincronizar en todos los dispositivos.", fr: "Connectez-vous pour suivre des domaines et les synchroniser sur tous vos appareils." },
+  "following.loginBtn": { "zh-TW": "登入 / 註冊", en: "Sign in", es: "Iniciar sesión", fr: "Se connecter" },
 
   // Categories
   "categories.title": { "zh-TW": "分類", en: "Categories", es: "Categorías", fr: "Catégories" },
@@ -228,6 +232,17 @@ export const translations = {
   // Common
   "common.view": { "zh-TW": "查看", en: "View", es: "Ver", fr: "Voir" },
   "common.notFound": { "zh-TW": "找不到", en: "Not Found", es: "No encontrado", fr: "Introuvable" },
+
+  // External link warning modal
+  "external.leaving":     { "zh-TW": "即將離開本站",                 en: "Leaving this site",                           es: "Saliendo del sitio",                          fr: "Quitter ce site" },
+  "external.visiting":    { "zh-TW": "您即將前往外部網站：",           en: "You are about to visit an external site:",    es: "Estás a punto de visitar:",                   fr: "Vous allez visiter :" },
+  "external.safetyTitle": { "zh-TW": "安全提醒",                      en: "Security Notice",                             es: "Aviso de seguridad",                          fr: "Avis de sécurité" },
+  "external.tip1":        { "zh-TW": "本站不對外部網站內容負責",        en: "We are not responsible for external content",  es: "No somos responsables del contenido externo", fr: "Nous ne sommes pas responsables du contenu externe" },
+  "external.tip2":        { "zh-TW": "請勿在不信任的網站輸入個人資訊", en: "Do not enter personal info on untrusted sites", es: "No ingreses datos personales en sitios no confiables", fr: "Ne saisissez pas d'infos personnelles sur des sites non fiables" },
+  "external.tip3":        { "zh-TW": "注意網址是否為釣魚網站",         en: "Watch for phishing URLs",                     es: "Verifica si es un sitio de phishing",          fr: "Vérifiez les URL de phishing" },
+  "external.tip4":        { "zh-TW": "如有疑慮請勿繼續前往",           en: "Do not proceed if in doubt",                  es: "No continúes si tienes dudas",                fr: "Ne continuez pas en cas de doute" },
+  "external.confirm":     { "zh-TW": "我了解風險，繼續前往",           en: "I understand, proceed anyway",                es: "Entiendo, continuar",                         fr: "Je comprends, continuer" },
+  "external.cancel":      { "zh-TW": "取消",                          en: "Cancel",                                      es: "Cancelar",                                    fr: "Annuler" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

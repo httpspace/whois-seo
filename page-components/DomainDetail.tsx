@@ -137,6 +137,7 @@ function buildInitialFetchState(initialData?: InitialDomainData): FetchState {
     create_date: whois?.create_date,
     expiry_date: whois?.expiry_date,
     update_date: whois?.update_date,
+    _updated: whois?._updated,
     domain_status: whois?.domain_status,
     name_servers: whois?.name_servers,
   };
@@ -215,6 +216,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
         create_date: whoisData?.create_date,
         expiry_date: whoisData?.expiry_date,
         update_date: whoisData?.update_date,
+        _updated: whoisData?._updated,
         domain_status: whoisData?.domain_status,
         name_servers: whoisData?.name_servers,
       };
@@ -335,10 +337,10 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                   </div>
                 </div>
 
-                {isSuccess && dnsData?.update_date && (
+                {isSuccess && dnsData?._updated && (
                   <p className="text-[11px] text-muted-foreground/50 mt-4 flex items-center gap-1">
                     <RefreshCw className="w-3 h-3" />
-                    {t("domain.lastUpdated")}: {dnsData.update_date}
+                    {t("domain.lastUpdated")}: {new Date(dnsData._updated * 1000).toISOString().slice(0, 10)}
                   </p>
                 )}
 
@@ -406,10 +408,10 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                 </div>
               </div>
 
-              {isSuccess && dnsData?.update_date && (
+              {isSuccess && dnsData?._updated && (
                 <p className="text-[11px] text-muted-foreground/50 mt-3 flex items-center gap-1">
                   <RefreshCw className="w-3 h-3" />
-                  {t("domain.lastUpdated")}: {dnsData.update_date}
+                  {t("domain.lastUpdated")}: {new Date(dnsData._updated * 1000).toISOString().slice(0, 10)}
                 </p>
               )}
 

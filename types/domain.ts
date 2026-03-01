@@ -18,6 +18,7 @@ export interface WhoisData {
   domain_status?: string[];
   _cached?: boolean;
   _age?: number;
+  _updated?: number;  // Unix timestamp — D1 cache last-fetched time
 }
 
 export interface DNSRecord {
@@ -50,6 +51,7 @@ export interface DNSData {
   domain_status?: string[];
   _cached?: boolean;
   _age?: number;
+  _updated?: number;  // Unix timestamp — D1 cache last-fetched time
 }
 
 export interface AISummaryData {
