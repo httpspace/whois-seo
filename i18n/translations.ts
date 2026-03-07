@@ -93,6 +93,7 @@ export const translations = {
 
   // Domain tabs
   "domain.tabDNS": { "zh-TW": "DNS", en: "DNS", es: "DNS", fr: "DNS" },
+  "domain.rawJsonSubtitle": { "zh-TW": "WHOIS API 原始資料 · 域名 DNS 完整查詢結果", en: "WHOIS API raw data · Full DNS query results", es: "Datos brutos de la API WHOIS · Resultados DNS completos", fr: "Données brutes API WHOIS · Résultats DNS complets" },
   "domain.tabHealth": { "zh-TW": "健康", en: "Health", es: "Salud", fr: "Santé" },
   "domain.tabSecurity": { "zh-TW": "安全", en: "Security", es: "Seguridad", fr: "Sécurité" },
   "domain.tabTimeline": { "zh-TW": "時間軸", en: "Timeline", es: "Cronología", fr: "Chronologie" },

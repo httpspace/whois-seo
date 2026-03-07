@@ -262,6 +262,7 @@ export function DomainDNSCard({ domain, data, className, defaultExpanded = false
             ))}
           </div>
         </div>
+
       </div>
     </SectionCard>
   );

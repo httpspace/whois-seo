@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Link } from "@/lib/router-compat";
 import { fetchDNS, fetchWhois, fetchAISummary } from "@/lib/api";
-import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock, RefreshCw } from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2, Plus, Check, Globe, Loader2, Database, Shield, Server, Clock, RefreshCw, Code2, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { ExternalLinkWarning } from "@/components/domain/ExternalLinkWarning";
 import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
 import { SectionCard } from "@/components/ui/section-card";
@@ -12,6 +12,7 @@ import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
+import { useLangPath } from "@/lib/useLangPath";
 import { cn } from "@/lib/utils";
 import type { WhoisData, DNSData, AISummaryData, FetchState } from "@/types/domain";
 
@@ -118,6 +119,65 @@ function DataCollectingState({ domain, dnsData, aiData }: {
   );
 }
 
+function RawJsonCard({ domain, whoisData, dnsData }: {
+  domain: string;
+  whoisData: object;
+  dnsData: object;
+}) {
+  const { t } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const jsonStr = JSON.stringify({ domain, whois: whoisData, dns: dnsData }, null, 2);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(jsonStr);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <SectionCard>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Code2 className="w-5 h-5 text-primary" />
+          </div>
+          <div className="text-left">
+            <h3 className="text-sm font-semibold">Raw JSON</h3>
+            <p className="text-xs text-muted-foreground">{t("domain.rawJsonSubtitle")}</p>
+          </div>
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      <div className={cn(
+        "overflow-hidden transition-all duration-300",
+        expanded ? "max-h-[800px] mt-4" : "max-h-0"
+      )}>
+        <div className="relative">
+          <button
+            onClick={handleCopy}
+            className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 hover:bg-muted transition-colors z-10 flex items-center gap-1.5"
+            title="Copy JSON"
+          >
+            {copied ? (
+              <><Check className="w-3.5 h-3.5 text-signal-active" /><span className="text-2xs text-signal-active">Copied</span></>
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </button>
+          <pre className="text-2xs font-mono p-3 rounded-lg bg-muted/50 overflow-x-auto text-muted-foreground leading-relaxed max-h-[700px] overflow-y-auto">
+            {jsonStr}
+          </pre>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 type InitialDomainData = {
   whois: WhoisData | null
   dns: DNSData | null
@@ -159,6 +219,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
+  const langPath = useLangPath();
 
   // Skip client-side fetch if SSR already provided valid data (D1 cache hit).
   // Only skip once on initial mount; subsequent domain changes or retries always fetch.
@@ -236,7 +297,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
   const following = isFollowing(domain.domain);
 
   const handleFollow = () => {
-    if (!isLoggedIn) { router.push('/login'); return; }
+    if (!isLoggedIn) { router.push(langPath('/login')); return; }
     following ? unfollowDomain(domain.domain) : followDomain(domain.domain);
   };
 
@@ -287,7 +348,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
         {!isDesktop && (
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 safe-area-pt">
             <div className="flex items-center justify-between px-4 py-3">
-              <Link href="/" className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors"><ArrowLeft className="w-5 h-5" /></Link>
+              <Link href={langPath("/")} className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors"><ArrowLeft className="w-5 h-5" /></Link>
               <div className="flex items-center gap-1">
                 <a href={`https://${domain.domain}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-muted transition-colors">
                   <ExternalLink className="w-4 h-4 text-muted-foreground" />
@@ -369,6 +430,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
                   <DomainQuickStats domain={domain.domain} data={dnsData} />
                   <DomainAIReview domain={domain.domain} data={aiData} description={undefined} />
                   <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
+                  <RawJsonCard domain={domain.domain} whoisData={isSuccess ? fetchState.whoisData : {}} dnsData={dnsData ?? {}} />
                 </>
               )}
             </div>
@@ -438,7 +500,7 @@ export default function DomainDetail({ domain: domainProp, initialData }: { doma
               <>
                 <DomainAIReview domain={domain.domain} data={aiData} description={undefined} />
                 <DomainDNSCard domain={domain.domain} data={dnsData} defaultExpanded />
-
+                <RawJsonCard domain={domain.domain} whoisData={isSuccess ? fetchState.whoisData : {}} dnsData={dnsData ?? {}} />
               </>
             )}
           </div>
