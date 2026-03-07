@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 import DomainDetailClient from './DomainDetailClient'
 import { fetchWhois, fetchDNS, fetchAISummary } from '@/lib/api'
 import type { WhoisData } from '@/types/domain'
+import type { SupportedLocale } from '@/types/faq'
 import { langAlternates } from '@/lib/i18n-config'
+import { generateFAQ } from '@/lib/generate-faq'
+import DomainFAQ from '@/components/domain/DomainFAQ'
 
 export async function generateMetadata({
   params,
@@ -116,6 +119,9 @@ export default async function Page({
   const dns = dnsResult.ok ? dnsResult.data : null
   const ai = aiResult.ok ? aiResult.data : null
 
+  const safeLocale = (['en', 'zh-TW', 'es', 'fr'].includes(lang) ? lang : 'en') as SupportedLocale
+  const faqItems = generateFAQ(whois, dns, safeLocale, domain)
+
   const summaryText =
     (lang === 'zh-tw' ? ai?.summary_zh : null) ||
     (lang === 'en' ? ai?.summary_en : null) ||
@@ -124,7 +130,7 @@ export default async function Page({
     ai?.summary_en ||
     null
 
-  const jsonLd = buildDomainJsonLd(domain, whois, ai?.summary_en, tPage.jsonLdName)
+  const jsonLd = buildDomainJsonLd(domain, whois, ai?.summary_en, tPage.jsonLdName, faqItems)
 
   return (
     <>
@@ -151,13 +157,19 @@ export default async function Page({
         </p>
       )}
       <DomainDetailClient initialData={{ whois, dns, ai }} />
+      <DomainFAQ items={faqItems} locale={safeLocale} domain={domain} />
     </>
   )
 }
 
-function buildDomainJsonLd(domain: string, whois: WhoisData | null, aiSummaryEn?: string, jsonLdName?: string) {
-  return {
-    '@context': 'https://schema.org',
+function buildDomainJsonLd(
+  domain: string,
+  whois: WhoisData | null,
+  aiSummaryEn?: string,
+  jsonLdName?: string,
+  faqItems?: import('@/types/faq').FAQItem[],
+) {
+  const webPage = {
     '@type': 'WebPage',
     name: jsonLdName ?? `${domain} WHOIS Lookup`,
     url: `https://whois-tracking.com/domain/${domain}`,
@@ -187,5 +199,20 @@ function buildDomainJsonLd(domain: string, whois: WhoisData | null, aiSummaryEn?
           }
         : {}),
     },
+  };
+
+  const graph: object[] = [webPage];
+
+  if (faqItems && faqItems.length > 0) {
+    graph.push({
+      '@type': 'FAQPage',
+      mainEntity: faqItems.map(f => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    });
   }
+
+  return { '@context': 'https://schema.org', '@graph': graph };
 }
