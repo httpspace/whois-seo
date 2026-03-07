@@ -10,13 +10,15 @@ import { TabSwitch } from "@/components/ui/tab-switch";
 import { SearchSheet } from "@/components/search/SearchSheet";
 import { DesktopSidebar, MobileStatsSummary } from "@/components/dashboard/DesktopSidebar";
 import { useAppStore } from "@/store/appStore";
-import { fetchPopular, fetchRecent } from "@/lib/api";
+import { fetchPopular, fetchRecent, fetchExpiring } from "@/lib/api";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
+import { useLangPath } from "@/lib/useLangPath";
 import { cn } from "@/lib/utils";
 
 type PopularItem = { domain: string; hits: number };
 type RecentItem = { domain: string; updated: number };
+type ExpiringItem = { domain: string; expiry_date: string };
 
 interface IndexProps {
   initialPopular?: PopularItem[];
@@ -28,14 +30,17 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
   // Initialise with build-time data so crawlers see real content immediately
   const [popularDomains, setPopularDomains] = useState<PopularItem[] | null>(initialPopular ?? null);
   const [recentDomains, setRecentDomains] = useState<RecentItem[] | null>(initialRecent ?? null);
+  const [expiringDomains, setExpiringDomains] = useState<ExpiringItem[] | null>(null);
   const { followedDomains } = useAppStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
+  const langPath = useLangPath();
 
   // Refresh with live data after mount (keeps content fresh beyond build snapshot)
   useEffect(() => {
     fetchPopular().then(data => { if (data) setPopularDomains(data); });
     fetchRecent(isDesktop ? 8 : 5).then(data => { if (data) setRecentDomains(data); });
+    fetchExpiring(60).then(data => { if (data) setExpiringDomains(data); });
   }, [isDesktop]);
 
   const browseTabs = [t("nav.trending"), t("nav.recent"), t("nav.expiring")];
@@ -64,7 +69,7 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
       return (
         <div className="space-y-1">
           {popularDomains.slice(0, isDesktop ? 8 : 5).map((item) => (
-            <ListItem key={item.domain} icon={TrendingUp} iconBg="bg-amber-500/10" iconColor="text-amber-500" title={item.domain} subtitle={`${item.hits.toLocaleString()} 次查詢`} href={`/domain/${item.domain}`} />
+            <ListItem key={item.domain} icon={TrendingUp} iconBg="bg-amber-500/10" iconColor="text-amber-500" title={item.domain} subtitle={`${item.hits.toLocaleString()} 次查詢`} href={langPath(`/domain/${item.domain}`)} />
           ))}
         </div>
       );
@@ -88,21 +93,48 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
       return (
         <div className="space-y-1">
           {recentDomains.map(({ domain }) => (
-            <ListItem key={domain} icon={Clock} iconBg="bg-blue-500/10" iconColor="text-blue-500" title={domain} href={`/domain/${domain}`} />
+            <ListItem key={domain} icon={Clock} iconBg="bg-blue-500/10" iconColor="text-blue-500" title={domain} href={langPath(`/domain/${domain}`)} />
           ))}
         </div>
       );
     }
     // Expiring
+    if (expiringDomains === null) {
+      return (
+        <div className="space-y-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
+              <div className="w-8 h-8 rounded-lg bg-muted shrink-0" />
+              <div className="flex-1 h-3.5 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (expiringDomains.length === 0) {
+      return <p className="text-sm text-muted-foreground text-center py-6">{t("expiring.noDomains")}</p>;
+    }
     return (
-      <div className="py-6 text-center">
-        <Timer className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground">到期域名功能正在開發中，敬請期待。</p>
+      <div className="space-y-1">
+        {expiringDomains.slice(0, isDesktop ? 8 : 5).map((item) => {
+          const days = Math.ceil((new Date(item.expiry_date).getTime() - Date.now()) / 86400000);
+          return (
+            <ListItem
+              key={item.domain}
+              icon={Timer}
+              iconBg="bg-destructive/10"
+              iconColor="text-destructive"
+              title={item.domain}
+              subtitle={`${days}d · ${item.expiry_date}`}
+              href={langPath(`/domain/${item.domain}`)}
+            />
+          );
+        })}
       </div>
     );
   };
 
-  const browsePath = activeKey === "Trending" ? "/trending" : activeKey === "Recent" ? "/recent" : "/expiring";
+  const browsePath = activeKey === "Trending" ? langPath("/trending") : activeKey === "Recent" ? langPath("/recent") : langPath("/expiring");
 
   return (
     <ResponsiveLayout showMobileHeader mobileHeaderTitle="Whoisvibe">
@@ -127,6 +159,7 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
                       <Search className="w-4 h-4" />
                       {t("index.searchDomain")}
                     </button>
+                    <p className="text-xs opacity-60 mt-3">{t("index.featureList")}</p>
                   </div>
                   <div className="w-24 h-24 rounded-full bg-primary-foreground/10 flex items-center justify-center glow-brand">
                     <Globe className="w-12 h-12 opacity-80" />
@@ -139,11 +172,11 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
                 <SectionCard>
                   <SectionHeader
                     title={t("index.followingDomains")}
-                    action={<Link href="/following" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
+                    action={<Link href={langPath("/following")} className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
                   />
                   <div className="space-y-1">
                     {followedDomains.slice(0, 3).map(domain => (
-                      <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={`/domain/${domain}`} />
+                      <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={langPath(`/domain/${domain}`)} />
                     ))}
                   </div>
                 </SectionCard>
@@ -173,7 +206,7 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
               </div>
               <p className="flex-1 text-sm font-semibold">{followedDomains.length} {t("index.domainsTracked")}</p>
               {followedDomains.length > 0 && (
-                <Link href="/following" className="text-xs font-medium text-primary flex items-center gap-0.5">
+                <Link href={langPath("/following")} className="text-xs font-medium text-primary flex items-center gap-0.5">
                   {t("common.view")} <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               )}
@@ -186,8 +219,9 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
               <div className="flex items-center justify-between relative z-10">
                 <div>
-                  <h3 className="text-lg font-display font-semibold">{t("index.domainSearch")}</h3>
-                  <p className="text-sm mt-1 opacity-70">{t("index.lookUpInstantly")}</p>
+                  <h1 className="text-lg font-display font-semibold">{t("index.welcome")}</h1>
+                  <p className="text-sm mt-1 opacity-70">{t("index.welcomeDesc")}</p>
+                  <p className="text-xs opacity-50 mt-2">{t("index.featureList")}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary-foreground/20 flex items-center justify-center glow-brand-sm">
                   <Search className="w-6 h-6" />
@@ -199,11 +233,11 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
               <SectionCard>
                 <SectionHeader
                   title={t("index.followingDomains")}
-                  action={<Link href="/following" className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
+                  action={<Link href={langPath("/following")} className="text-xs font-medium text-primary flex items-center gap-0.5">{t("index.viewAll")} <ChevronRight className="w-3.5 h-3.5" /></Link>}
                 />
                 <div className="space-y-1">
                   {followedDomains.slice(0, 3).map(domain => (
-                    <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={`/domain/${domain}`} />
+                    <ListItem key={domain} icon={Globe} iconBg="bg-primary/10" iconColor="text-primary" title={domain} href={langPath(`/domain/${domain}`)} />
                   ))}
                 </div>
               </SectionCard>

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@/lib/router-compat";
-import { Compass, Bell, User, TrendingUp, Clock, Timer, Grid3X3, ChevronRight, Heart, LogOut, LogIn } from "lucide-react";
+import { Compass, Bell, User, TrendingUp, Clock, Timer, Grid3X3, ChevronRight, Heart, LogOut, LogIn, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LanguageToggle } from "@/components/theme/LanguageToggle";
@@ -8,6 +8,7 @@ import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useLanguage } from "@/i18n/useLanguage";
+import { useLangPath } from "@/lib/useLangPath";
 
 export function DesktopLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -15,7 +16,9 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
   const { followedDomains } = useAppStore();
   const { user, isLoggedIn, logout, unreadCount } = useAuthStore();
   const { t } = useLanguage();
+  const langPath = useLangPath();
   const unread = unreadCount();
+  const strippedPathname = location.pathname.replace(/^\/(zh-tw|en|es|fr)/, '') || '/';
 
   const navItems = [
     { icon: Compass, label: t("nav.explore"), path: "/" },
@@ -29,13 +32,14 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
     { icon: Heart, label: t("nav.following"), path: "/following" },
     { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
     { icon: User, label: t("nav.settings"), path: "/settings" },
+    { icon: Info, label: t("nav.about"), path: "/about" },
   ];
 
   return (
     <div className="min-h-screen flex bg-background">
       <aside className="hidden lg:flex flex-col w-60 border-r border-border/40 bg-card/50 h-screen sticky top-0">
         <div className="p-5 border-b border-border/40">
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href={langPath("/")} className="flex items-center gap-2.5 group">
             <img src="/logo.webp" alt="Whoisvibe" className="w-8 h-8 rounded-xl object-contain" />
             <span className="font-display font-semibold text-lg text-gradient-brand">Whoisvibe</span>
           </Link>
@@ -48,11 +52,11 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
         <nav className="flex-1 px-3 py-2">
           <div className="space-y-1">
             {navItems.map(item => {
-              const isActive = location.pathname === item.path;
+              const isActive = strippedPathname === item.path;
               return (
                 <Link
                   key={item.path}
-                  href={item.path}
+                  href={langPath(item.path)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -70,12 +74,12 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
             <p className="px-3 mb-2 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">{t("nav.personal")}</p>
             <div className="space-y-1">
               {userItems.map(item => {
-                const isActive = location.pathname === item.path;
+                const isActive = strippedPathname === item.path;
                 const count = item.path === "/notifications" ? unread : item.path === "/following" ? followedDomains.length : 0;
                 return (
                   <Link
                     key={item.path}
-                    href={item.path}
+                    href={langPath(item.path)}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                       isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -107,7 +111,7 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
               <button
-                onClick={() => { logout(); navigate("/login"); }}
+                onClick={() => { logout(); navigate(langPath("/login")); }}
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 title={t("user.signOut")}
               >
@@ -116,7 +120,7 @@ export function DesktopLayout({ children }: { children: ReactNode }) {
             </div>
           ) : (
             <Link
-              href="/login"
+              href={langPath("/login")}
               className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors group"
             >
               <div className="w-9 h-9 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
