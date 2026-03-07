@@ -9,15 +9,17 @@ import { useEffect, useState } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
 import { useAuthStore } from "@/store/authStore";
-import { useNavigate } from "@/lib/router-compat";
+import { useNavigate, Link } from "@/lib/router-compat";
+import { useLangPath } from "@/lib/useLangPath";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const { t, locale, setLocale } = useLanguage();
+  const { t, locale, changeLocale } = useLanguage();
   const { user, isLoggedIn, logout } = useAuthStore();
   const navigate = useNavigate();
+  const langPath = useLangPath();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -58,7 +60,7 @@ export default function Settings() {
                 return (
                   <button
                     key={option.value}
-                    onClick={() => setLocale(option.value)}
+                    onClick={() => changeLocale(option.value)}
                     className={cn(
                       "flex-1 flex flex-col items-center gap-2 p-3 rounded-xl border transition-colors",
                       isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
@@ -176,6 +178,19 @@ export default function Settings() {
             <div className="px-4 lg:px-6">
               <p className="text-sm text-muted-foreground">{t("settings.aboutDesc")}</p>
               <p className="text-xs text-muted-foreground mt-2">Version 1.0.0</p>
+              <div className="flex gap-3 mt-3 text-xs">
+                <Link href={langPath("/about")} className="text-muted-foreground hover:text-primary transition-colors">
+                  {t("about.title")}
+                </Link>
+                <span className="text-border">·</span>
+                <Link href={langPath("/privacy")} className="text-muted-foreground hover:text-primary transition-colors">
+                  {t("about.privacyLink")}
+                </Link>
+                <span className="text-border">·</span>
+                <Link href={langPath("/terms")} className="text-muted-foreground hover:text-primary transition-colors">
+                  {t("about.termsLink")}
+                </Link>
+              </div>
             </div>
           </section>
         </div>
