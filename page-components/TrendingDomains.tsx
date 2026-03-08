@@ -89,7 +89,7 @@ export default function TrendingDomains() {
               <div>
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <p className="font-semibold text-foreground">{t("trending.title")}</p>
+                  <h1 className="font-semibold text-foreground">{t("trending.title")}</h1>
                 </div>
                 <p className="text-xs text-muted-foreground">{t("trending.subtitle")}</p>
               </div>
@@ -105,7 +105,7 @@ export default function TrendingDomains() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-foreground">{t("trending.title")}</p>
+                  <h1 className="text-xl font-semibold text-foreground">{t("trending.title")}</h1>
                   <p className="text-sm text-muted-foreground">{t("trending.subtitle")}</p>
                 </div>
               </div>
