@@ -69,7 +69,7 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
       return (
         <div className="space-y-1">
           {popularDomains.slice(0, isDesktop ? 8 : 5).map((item) => (
-            <ListItem key={item.domain} icon={TrendingUp} iconBg="bg-amber-500/10" iconColor="text-amber-500" title={item.domain} subtitle={`${item.hits.toLocaleString()} 次查詢`} href={langPath(`/domain/${item.domain}`)} />
+            <ListItem key={item.domain} icon={TrendingUp} iconBg="bg-amber-500/10" iconColor="text-amber-500" title={item.domain} subtitle={`${item.hits.toLocaleString()} ${t("trending.searchCount")}`} href={langPath(`/domain/${item.domain}`)} />
           ))}
         </div>
       );
@@ -193,6 +193,12 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
                   {t("index.viewAllLower")} <ChevronRight className="w-4 h-4" />
                 </Link>
               </SectionCard>
+
+              {/* WHOIS Monitoring — SEO/AEO visible section */}
+              <SectionCard>
+                <h2 className="text-base font-semibold mb-2">{t("index.monitoringTitle")}</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t("index.monitoringDesc")}</p>
+              </SectionCard>
             </div>
             <DesktopSidebar />
           </div>
@@ -219,12 +225,15 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
               <div className="flex items-center justify-between relative z-10">
                 <div>
-                  <h1 className="text-lg font-display font-semibold">{t("index.welcome")}</h1>
-                  <p className="text-sm mt-1 opacity-70">{t("index.welcomeDesc")}</p>
-                  <p className="text-xs opacity-50 mt-2">{t("index.featureList")}</p>
+                  <h1 className="text-xl font-display font-bold">{t("index.welcome")}</h1>
+                  <p className="text-sm mt-1 opacity-80">{t("index.lookUpInstantly")}</p>
+                  <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg bg-primary-foreground/20 hover:bg-primary-foreground/30 text-xs font-medium">
+                    <Search className="w-3.5 h-3.5" />
+                    {t("index.searchDomain")}
+                  </span>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-primary-foreground/20 flex items-center justify-center glow-brand-sm">
-                  <Search className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-full bg-primary-foreground/10 flex items-center justify-center glow-brand">
+                  <Search className="w-7 h-7 opacity-80" />
                 </div>
               </div>
             </button>
@@ -252,6 +261,12 @@ export default function Index({ initialPopular, initialRecent }: IndexProps) {
               <Link href={browsePath} className="flex items-center justify-center gap-1 mt-4 py-2.5 rounded-xl bg-muted/50 hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 {t("index.viewAllLower")} <ChevronRight className="w-4 h-4" />
               </Link>
+            </SectionCard>
+
+            {/* WHOIS Monitoring — SEO/AEO visible section */}
+            <SectionCard>
+              <h2 className="text-base font-semibold mb-2">{t("index.monitoringTitle")}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("index.monitoringDesc")}</p>
             </SectionCard>
           </div>
         )}

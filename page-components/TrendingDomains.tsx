@@ -11,6 +11,7 @@ import { useAppStore } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLanguage } from "@/i18n/useLanguage";
+import { useLangPath } from "@/lib/useLangPath";
 import { cn } from "@/lib/utils";
 
 type PopularItem = { domain: string; hits: number };
@@ -20,11 +21,12 @@ function FollowButton({ domain }: { domain: string }) {
   const { isLoggedIn } = useAuthStore();
   const router = useRouter();
   const { t } = useLanguage();
+  const langPath = useLangPath();
   const following = isFollowing(domain);
 
   return (
     <button
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isLoggedIn) { router.push('/login'); return; } following ? unfollowDomain(domain) : followDomain(domain); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isLoggedIn) { router.push(langPath('/login')); return; } following ? unfollowDomain(domain) : followDomain(domain); }}
       className={cn(
         "px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0 flex items-center gap-1",
         following ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"
@@ -36,12 +38,14 @@ function FollowButton({ domain }: { domain: string }) {
 }
 
 function DomainRow({ item, rank }: { item: PopularItem; rank: number }) {
+  const langPath = useLangPath();
+  const { t } = useLanguage();
   return (
-    <Link href={`/domain/${item.domain}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
+    <Link href={langPath(`/domain/${item.domain}`)} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
       <span className="w-7 text-center text-sm font-bold text-muted-foreground shrink-0">#{rank}</span>
       <div className="flex-1 min-w-0">
         <p className="font-medium font-mono text-sm truncate">{item.domain}</p>
-        <p className="text-xs text-muted-foreground">{item.hits.toLocaleString()} 次查詢</p>
+        <p className="text-xs text-muted-foreground">{item.hits.toLocaleString()} {t("trending.searchCount")}</p>
       </div>
       <FollowButton domain={item.domain} />
     </Link>
@@ -65,6 +69,7 @@ export default function TrendingDomains() {
   const [domains, setDomains] = useState<PopularItem[] | null>(null);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { t } = useLanguage();
+  const langPath = useLangPath();
 
   useEffect(() => {
     fetchPopular().then(setDomains);
@@ -80,11 +85,11 @@ export default function TrendingDomains() {
         {!isDesktop && (
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
             <div className="flex items-center gap-3 px-4 py-3">
-              <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
+              <Link href={langPath("/")} className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
               <div>
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <h1 className="font-semibold text-foreground">{t("trending.title")}</h1>
+                  <p className="font-semibold text-foreground">{t("trending.title")}</p>
                 </div>
                 <p className="text-xs text-muted-foreground">{t("trending.subtitle")}</p>
               </div>
@@ -100,10 +105,11 @@ export default function TrendingDomains() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-foreground">{t("trending.title")}</h1>
+                  <p className="text-xl font-semibold text-foreground">{t("trending.title")}</p>
                   <p className="text-sm text-muted-foreground">{t("trending.subtitle")}</p>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground/70 leading-relaxed mb-4">{t("trending.seoDesc")}</p>
               <SectionCard className="divide-y divide-border p-0 overflow-hidden">
                 {rows}
               </SectionCard>
@@ -116,7 +122,7 @@ export default function TrendingDomains() {
                 </div>
                 <div className="space-y-2">
                   {(domains ?? []).slice(0, 3).map((item, i) => (
-                    <Link key={item.domain} href={`/domain/${item.domain}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-background/50 transition-colors">
+                    <Link key={item.domain} href={langPath(`/domain/${item.domain}`)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-background/50 transition-colors">
                       <span className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
                       <span className="text-sm font-medium font-mono truncate">{item.domain}</span>
                     </Link>

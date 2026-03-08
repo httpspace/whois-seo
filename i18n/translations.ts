@@ -24,7 +24,7 @@ export const translations = {
   "index.welcome": { "zh-TW": "免費 WHOIS 查詢與域名追蹤 — Whoisvibe", en: "Free WHOIS Lookup & Domain Tracker — Whoisvibe", es: "Consulta WHOIS Gratuita y Seguimiento de Dominios — Whoisvibe", fr: "Lookup WHOIS Gratuit & Suivi de Domaines — Whoisvibe" },
   "domain.pageTitle": { "zh-TW": "WHOIS 查詢 — 域名資訊、到期日與DNS | WhoisVibe", en: "WHOIS Lookup — Domain Info, Expiry & DNS | WhoisVibe", es: "Consulta WHOIS — Info de Dominio, Vencimiento y DNS | WhoisVibe", fr: "Lookup WHOIS — Infos Domaine, Expiration et DNS | WhoisVibe" },
   "index.welcomeDesc": { "zh-TW": "一鍵查詢任何網域的到期日、DNS 記錄、註冊商與 SSL 憑證狀態。", en: "Instantly look up expiry dates, DNS records, registrar info, and SSL status for any domain.", es: "Consulta al instante fechas de vencimiento, registros DNS, registrador y estado SSL de cualquier dominio.", fr: "Consultez instantanément les dates d'expiration, enregistrements DNS, registraire et statut SSL de n'importe quel domaine." },
-  "index.featureList": { "zh-TW": "✓ 到期日 · DNS 記錄 · 註冊商 · SSL 狀態 · AI 摘要 · 域名追蹤通知", en: "✓ Expiry date · DNS records · Registrar · SSL status · AI summary · Domain tracking alerts", es: "✓ Fecha de vencimiento · DNS · Registrador · SSL · Resumen IA · Alertas de dominio", fr: "✓ Date d'expiration · DNS · Registraire · SSL · Résumé IA · Alertes de domaine" },
+  "index.featureList": { "zh-TW": "到期日 · DNS · 註冊商 · SSL · AI 摘要 · 追蹤通知", en: "Expiry · DNS · Registrar · SSL · AI summary · Tracking", es: "Vencimiento · DNS · Registrador · SSL · Resumen IA · Alertas", fr: "Expiration · DNS · Registraire · SSL · Résumé IA · Alertes" },
   "index.searchDomain": { "zh-TW": "搜尋網域", en: "Search domain", es: "Buscar dominio", fr: "Rechercher un domaine" },
   "index.domainsTracked": { "zh-TW": "個網域追蹤中", en: "domains tracked", es: "dominios seguidos", fr: "domaines suivis" },
   "index.followingDomains": { "zh-TW": "追蹤中的網域", en: "Following", es: "Siguiendo", fr: "Suivis" },
@@ -34,6 +34,8 @@ export const translations = {
   "index.categories": { "zh-TW": "分類", en: "Categories", es: "Categorías", fr: "Catégories" },
   "index.domainSearch": { "zh-TW": "網域搜尋", en: "Domain Search", es: "Buscar dominio", fr: "Recherche de domaine" },
   "index.lookUpInstantly": { "zh-TW": "即時查詢任何網域", en: "Look up any domain instantly", es: "Consulta cualquier dominio al instante", fr: "Recherchez n'importe quel domaine instantanément" },
+  "index.monitoringTitle": { "zh-TW": "WHOIS 監控與域名情報", en: "WHOIS Monitoring & Domain Intelligence", es: "Monitoreo WHOIS e Inteligencia de Dominios", fr: "Surveillance WHOIS & Intelligence de Domaine" },
+  "index.monitoringDesc": { "zh-TW": "即時追蹤域名註冊變更、擁有者移轉與到期提醒。設定任何網域的 WHOIS 監控警報 — 當域名的 DNS 記錄、SSL 狀態或到期日變動時立即通知。", en: "Track domain registration changes, ownership transfers, and expiration alerts with real-time WHOIS monitoring. Set up alerts for any domain — get notified when DNS records, registrar info, or SSL status changes.", es: "Rastrea cambios de registro, transferencias de propiedad y alertas de vencimiento con monitoreo WHOIS en tiempo real. Configura alertas para cualquier dominio — recibe notificaciones cuando cambien los registros DNS, el registrador o el estado SSL.", fr: "Suivez les changements d'enregistrement, transferts de propriété et alertes d'expiration avec la surveillance WHOIS en temps réel. Configurez des alertes pour n'importe quel domaine — soyez notifié quand les enregistrements DNS, le registraire ou le statut SSL changent." },
 
   // Search
   "search.placeholder": { "zh-TW": "搜尋網域...", en: "Search domain...", es: "Buscar dominio...", fr: "Rechercher un domaine..." },
@@ -187,6 +189,7 @@ export const translations = {
   "trending.subtitle": { "zh-TW": "即時追蹤最活躍的網域動態", en: "Most active domains right now", es: "Los dominios más activos ahora mismo", fr: "Les domaines les plus actifs en ce moment" },
   "trending.seoDesc": { "zh-TW": "探索網路上最熱門、成長最快的網域。我們的熱門列表根據 WHOIS 活動、DNS 變動與社群關注度定期更新，協助您掌握網域產業動向。", en: "Discover the most talked-about and fastest-rising domains across the internet. Our trending list is updated regularly based on WHOIS activity, DNS changes, and community interest — helping you stay ahead of domain industry movements.", es: "Descubre los dominios más comentados y de crecimiento más rápido. Nuestra lista se actualiza según actividad WHOIS, cambios DNS e interés de la comunidad.", fr: "Découvrez les domaines les plus populaires et en croissance rapide, mis à jour selon l'activité WHOIS, les changements DNS et l'intérêt communautaire." },
   "trending.hotThisWeek": { "zh-TW": "本週最熱", en: "Hot This Week", es: "Popular esta semana", fr: "Populaire cette semaine" },
+  "trending.searchCount": { "zh-TW": "次查詢", en: "searches", es: "búsquedas", fr: "recherches" },
 
   // Sidebar
   "sidebar.totalDomains": { "zh-TW": "總收錄網域", en: "Total Domains", es: "Total de dominios", fr: "Total des domaines" },
